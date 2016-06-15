@@ -111,19 +111,16 @@ class QueryParseTree
       if op == :not
         @node << [ :not, o1 ]
       else
-        o0 = @terms.pop
-        if o0
+        o2 = @terms.pop
+        if o2
           if @node[0] == op
-            @node << o0 << o1
-            $stderr.puts "alt 1 used"
+            @node << o1 << o2
           else
-            @node << [ op, o0, o1 ]
+            @node << [ op, o1, o2 ]
           end
         else
           if @node[0] == op
-            # @node.insert( 1, o1 )
             @node << o1
-            # $stderr.puts "alt 2 used"
           else
             @node = [ op, @node, o1 ]
           end

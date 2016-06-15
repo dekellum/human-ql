@@ -28,8 +28,8 @@ class QueryParseTree
 
   PRECEDENCE = {
     not: 30,
-    and: 20,
-    or: 10
+    or: 20,
+    and: 10
   }
 
   OR_TOKEN = /\A(OR|\|)\z/i
@@ -54,53 +54,119 @@ class QueryParseTree
     tree = parse_tree( tokens )
   end
 
+  def initialize
+    @node = [ DEFAULT_OP ]
+    @terms = []
+    @ops = []
+    @last_term = false
+    $stderr.puts
+  end
+
+  def dump( fr )
+    $stderr.puts( "%2s terms: %-30s ops: %-12s node: %-30s" %
+                  [ fr, @terms.inspect, @ops.inspect, @node.inspect ] )
+  end
+
+  def push_term( t )
+    if @last_term
+      push_op( DEFAULT_OP )
+    end
+    @terms << t
+    @last_term = true
+    dump 'PT'
+  end
+
+  def push_op( op )
+    loop do
+      last = @ops.last
+      if last && PRECEDENCE[op] <= PRECEDENCE[last]
+        @ops.pop
+        op_to_node( last )
+        dump 'PL'
+      else
+        break
+      end
+    end
+    @ops << op
+    @last_term = false
+    dump 'PO'
+  end
+
+  def final_tree
+    while( last = @ops.pop )
+      op_to_node( last )
+      dump 'FO'
+    end
+    while( last = @terms.pop )
+      @node << last
+      dump 'FT'
+    end
+
+    @node
+  end
+
+  def op_to_node( op )
+    o1 = @terms.pop
+    if o1
+      if op == :not
+        @node << [ :not, o1 ]
+      else
+        o0 = @terms.pop
+        if o0
+          if @node[0] == op
+            @node << o0 << o1
+            $stderr.puts "alt 1 used"
+          else
+            @node << [ op, o0, o1 ]
+          end
+        else
+          if @node[0] == op
+            # @node.insert( 1, o1 )
+            @node << o1
+            # $stderr.puts "alt 2 used"
+          else
+            @node = [ op, @node, o1 ]
+          end
+        end
+      end
+    else
+      $stderr.puts "No o1?"
+    end
+  end
+
   def self.parse_tree( tokens )
-    node = [ DEFAULT_OP ]
+    s = new
     while ( t = tokens.shift )
       case t
       when LQUOTE
         rqi = tokens.index { |t| t =~ RQUOTE }
         if rqi
-          node << [ :phrase, *tokens[0...rqi] ]
+          s.push_term( [ :phrase, *tokens[0...rqi] ] )
           tokens = tokens[rqi+1..-1]
         end # else ignore
       when LPAREN
         rpi = tokens.rindex { |t| t =~ RPAREN } #last
         if rpi
-          node << parse_tree( tokens[0...rpi] )
+          s.push_term( parse_tree( tokens[0...rpi] ) )
           tokens = tokens[rpi+1..-1]
         end # else ignore
       when RQUOTE
         #ignore
       when RPAREN
         #ignore
-      when OR_TOKEN
-        if node.length < 3
-          node[0] = :or
-        elsif node[0] == :and
-          or_node = [ :or, node ]
-          node = or_node
-        end #else ignore
-      when AND_TOKEN
-        if node.length < 3
-          node[0] = :and
-        elsif node[0] == :or
-          anode = [ :and, node.pop ]
-          node << anode
-          node = anode
-        end #else ignore
-      when NOT_TOKEN
-        p = []
-        nn = [ :not, p ]
-        node << nn
-        #FIXME
       when PREFIX
-        node << [ $1, $2 ]
+        s.push_term( [ $1, $2 ] )
+      when OR_TOKEN
+        s.push_op( :or )
+      when AND_TOKEN
+        # ignore (DEFAULT)
+      when NOT_TOKEN
+        s.push_op( :not )
       else
-        node << t
+        s.push_term( t )
       end
     end
-    node
+    s.final_tree
   end
 
   def self.norm_quote_split( q )
@@ -187,14 +253,19 @@ class QueryParseTest < Minitest::Test
     assert_equal( '- ( a | b )',  TC.normalize( '-(a|b)' ) )
   end
 
+  A = 'a'
+  B = 'b'
+  C = 'c'
+  D = 'd'
+
   def test_parse_basic
-    assert_equal( [ :and, 'a' ], TC.parse( 'a' ) )
-    assert_equal( [ :and, [ 'FOO', 'a' ] ], TC.parse( 'FOO:a' ) )
-    assert_equal( [ :and, 'a', 'b' ], TC.parse( 'a b' ) )
+    assert_equal( [ :and, A ], TC.parse( 'a' ) )
+    assert_equal( [ :and, [ 'FOO', A ] ], TC.parse( 'FOO:a' ) )
+    assert_equal( [ :and, A, B ], TC.parse( 'a b' ) )
   end
 
   def test_parse_phrase
-    assert_equal( [ :and, [ :phrase, 'a', 'b' ] ], TC.parse( '"a b"' ) ) #FIXME
+    assert_equal( [ :and, [ :phrase, A, B ] ], TC.parse( '"a b"' ) ) #FIXME
   end
 
   def test_parse_empty
@@ -202,14 +273,17 @@ class QueryParseTest < Minitest::Test
   end
 
   def test_parse_parens
-    assert_equal( [ :and, [ :and, 'a', 'b' ] ], TC.parse( '(a b)' ) )
-    assert_equal( [ :and, [ :or, 'a', 'b' ], 'c' ], TC.parse( '(a|b) c' ) )
-    assert_equal( [ :and, 'c', [ :or, 'a', 'b' ] ], TC.parse( 'c (a|b)' ) )
-    assert_equal( [ :and, 'd', [ :or, 'a', 'b', 'c' ] ], TC.parse( 'd (a|b|c)' ) )
+    assert_equal( [ :and, [ :and, A, B ] ], TC.parse( '(a b)' ) )
+    assert_equal( [ :and, [ :or, A, B ], C ], TC.parse( '(a|b) c' ) )
+    assert_equal( [ :and, C, [ :or, A, B ] ], TC.parse( 'c (a|b)' ) )
+    assert_equal( [ :and, 'd', [ :or, A, B, C ] ], TC.parse( 'd (a|b|c)' ) )
   end
 
   def test_parse_precedence
-    assert_equal( [ :or, 'a', [ :and, 'b', 'c' ] ], TC.parse( 'a | b c' ) )
+    assert_equal( [ :and, [ :or, A, B ], C ], TC.parse( 'a | b c' ) )
+    assert_equal( [ :and, A, [ :or, B, C ] ], TC.parse( 'a b | c' ) )
+
+    assert_equal( [ :and, [ :or, A, [ :not, B ] ], C ], TC.parse( 'a | - b c' ) )
   end
 
 end

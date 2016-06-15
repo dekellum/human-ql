@@ -10,15 +10,27 @@
 # ALSO '-"a b"'          --> [ :not, [ :phrase, a b ] ]
 # POSSIBLY IN FUTURE: PREFIX:( parenthetical... )
 
-# FIXMEAdditional special characters to be filtered out:
+# FIXME: Additional special characters to be filtered out:
 # ":" when not matching a prefix, replace with space
 # "*" to_tsquery significant
 
+# Via https://www.postgresql.org/docs/9.5/static/datatype-textsearch.html
+#
+# In the absence of parentheses, ! (NOT) binds most tightly, and &
+# (AND) binds more tightly than | (OR).
 
+# FIXME:
+# Use an operator stack? Like: https://en.wikipedia.org/wiki/Shunting-yard_algorithm
 
 class QueryParseTree
 
   DEFAULT_OP = :and
+
+  PRECEDENCE = {
+    not: 30,
+    and: 20,
+    or: 10
+  }
 
   OR_TOKEN = /\A(OR|\|)\z/i
   AND_TOKEN = /\A(AND|\&)\z/i
@@ -175,16 +187,29 @@ class QueryParseTest < Minitest::Test
     assert_equal( '- ( a | b )',  TC.normalize( '-(a|b)' ) )
   end
 
-  def test_parse
-    assert_equal( [ :and ], TC.parse( '' ) )
+  def test_parse_basic
     assert_equal( [ :and, 'a' ], TC.parse( 'a' ) )
     assert_equal( [ :and, [ 'FOO', 'a' ] ], TC.parse( 'FOO:a' ) )
     assert_equal( [ :and, 'a', 'b' ], TC.parse( 'a b' ) )
-    assert_equal( [ :and, [ :phrase, 'a', 'b' ] ], TC.parse( '"a b"' ) )
+  end
+
+  def test_parse_phrase
+    assert_equal( [ :and, [ :phrase, 'a', 'b' ] ], TC.parse( '"a b"' ) ) #FIXME
+  end
+
+  def test_parse_empty
+    assert_equal( [ :and ], TC.parse( '' ) ) #FIXME
+  end
+
+  def test_parse_parens
     assert_equal( [ :and, [ :and, 'a', 'b' ] ], TC.parse( '(a b)' ) )
     assert_equal( [ :and, [ :or, 'a', 'b' ], 'c' ], TC.parse( '(a|b) c' ) )
     assert_equal( [ :and, 'c', [ :or, 'a', 'b' ] ], TC.parse( 'c (a|b)' ) )
     assert_equal( [ :and, 'd', [ :or, 'a', 'b', 'c' ] ], TC.parse( 'd (a|b|c)' ) )
+  end
+
+  def test_parse_precedence
+    assert_equal( [ :or, 'a', [ :and, 'b', 'c' ] ], TC.parse( 'a | b c' ) )
   end
 
 end

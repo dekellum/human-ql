@@ -51,7 +51,7 @@ class QueryParseTree
   def self.parse( q )
     q = normalize( q )
     tokens = q ? q.split(' ') : []
-    tree = parse_tree( tokens )
+    tree_norm( parse_tree( tokens ) )
   end
 
   def initialize
@@ -166,6 +166,37 @@ class QueryParseTree
     s.final_tree
   end
 
+  def self.tree_norm( node )
+    op,*args = node
+    out = []
+    reduced = false
+    args.each do |a|
+      if a.is_a?( Array )
+        if a[0] == op || ( ( a[0] == :and || a[0] == :or ) && a.length < 3 )
+          a[1..-1].each do |aa|
+            if aa.is_a?( Array )
+              out << tree_norm( aa )
+            else
+              out << aa
+            end
+          end
+          reduced = true
+        else
+          out << tree_norm( a )
+        end
+      else
+        out << a
+      end
+    end
+    #FIXME: Doesn't reduce itself in length = 2 case?
+    n = [ op, *out ]
+    if reduced
+      tree_norm( n )
+    else
+      n
+    end
+  end
+
   def self.norm_quote_split( q )
     q.gsub( /(?<=\A|#{SP})"(?=#{NSP}+)/, '" ' ).
       gsub( /(?<=#{NSP})"(?=#{SP}|\z)/, ' "' )
@@ -269,17 +300,26 @@ class QueryParseTest < Minitest::Test
     assert_equal( [ :and ], TC.parse( '' ) ) #FIXME
   end
 
+  def test_parse_or
+    assert_equal( [ :or, A, B ], TC.parse( 'a|b' ) )
+  end
+
   def test_parse_parens
-    assert_equal( [ :and, [ :and, A, B ] ], TC.parse( '(a b)' ) )
+    assert_equal( [ :and, A, B ], TC.parse( '(a b)' ) )
     assert_equal( [ :and, [ :or, A, B ], C ], TC.parse( '(a|b) c' ) )
     assert_equal( [ :and, C, [ :or, A, B ] ], TC.parse( 'c (a|b)' ) )
     assert_equal( [ :and, 'd', [ :or, A, B, C ] ], TC.parse( 'd (a|b|c)' ) )
   end
 
-  def test_parse_precedence
+  def test_parse_precedence_1
     assert_equal( [ :and, [ :or, A, B ], C ], TC.parse( 'a | b c' ) )
-    assert_equal( [ :and, A, [ :or, B, C ] ], TC.parse( 'a b | c' ) )
+  end
 
+  def test_parse_precedence_2
+    assert_equal( [ :and, A, [ :or, B, C ] ], TC.parse( 'a b | c' ) )
+  end
+
+  def test_parse_precedence_3
     assert_equal( [ :and, [ :or, A, [ :not, B ] ], C ], TC.parse( 'a | - b c' ) )
   end
 

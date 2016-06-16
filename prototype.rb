@@ -343,6 +343,11 @@ class QueryParseTest < Minitest::Test
 
   def test_parse_or_noop_0
     assert_equal( nil, TC.parse( '|' ) )
+    assert_equal( nil, TC.parse( '||' ) )
+    assert_equal( nil, TC.parse( '|&' ) )
+    assert_equal( nil, TC.parse( '&|' ) )
+    assert_equal( nil, TC.parse( '-|' ) )
+    assert_equal( nil, TC.parse( '|-' ) )
   end
 
   def test_parse_or_noop_1

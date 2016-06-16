@@ -321,7 +321,7 @@ class QueryParseTest < Minitest::Test
   end
 
   def test_parse_parens_4
-    assert_equal( [ :and, 'd', [ :or, A, B, C ] ], TC.parse( 'd (a|b|c)' ) )
+    assert_equal( [ :and, D, [ :or, A, B, C ] ], TC.parse( 'd (a|b|c)' ) )
   end
 
   def test_parse_precedence_1
@@ -334,6 +334,14 @@ class QueryParseTest < Minitest::Test
 
   def test_parse_precedence_3
     assert_equal( [ :and, [ :or, A, [ :not, B ] ], C ], TC.parse( 'a | - b c' ) )
+  end
+
+  def test_parse_precedence_4
+    assert_equal( [ :and, [ :or, [ :not, A ], B ], C ], TC.parse( '-a | b & c' ) )
+  end
+
+  def test_parse_precedence_5
+    assert_equal( [ :and, [ :or, A, B ], [ :not, C ] ], TC.parse( 'a | b -c' ) )
   end
 
 end

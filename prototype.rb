@@ -1,6 +1,7 @@
 
 # Supported syntax:
 # "a b c" --> " a b c "  --> [ :phrase, a, b, c ]
+# a b c (default :and)   --> [ :and, a, b, c ]
 # a OR b, a|b -> a | b   --> [ :or, a, b ]
 # a AND B, a&B --> a & B --> [ :and, a, b ]
 # a AND ( B OR C )       --> [ :and, a, [ :or, B, C ] ]
@@ -387,16 +388,20 @@ class QueryParseTest < Minitest::Test
     assert_equal( [ :and, [ :or, A, [ :not, B ] ], C ], TC.parse( 'a | - b c' ) )
   end
 
-  def test_parse_precedence_4
+  def test_parse_precedence_4_explicit
     assert_equal( [ :and, [ :or, [ :not, A ], B ], C ], TC.parse( '-a | b & c' ) )
   end
 
-  def test_parse_precedence_5
-    assert_equal( [ :and, [ :or, A, B ], [ :not, C ] ], TC.parse( 'a | b -c' ) )
+  def test_parse_precedence_4_implied
+    assert_equal( [ :and, [ :or, [ :not, A ], B ], C ], TC.parse( '-a | b c' ) )
   end
 
-  def test_parse_precedence_5e
-    assert_equal( [ :and, [ :or, A, B ], [ :not, C ] ], TC.parse( 'a | b & -c' ) )
+  def test_parse_precedence_5_explicit
+    assert_equal( [ :and, [ :or, A, B ], [ :not, C ] ], TC.parse( 'a | b AND -c' ) )
+  end
+
+  def test_parse_precedence_5_implied
+    assert_equal( [ :and, [ :or, A, B ], [ :not, C ] ], TC.parse( 'a | b -c' ) )
   end
 
   def test_parse_precedence_6

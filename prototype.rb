@@ -20,7 +20,10 @@
 # (AND) binds more tightly than | (OR).
 
 # FIXME: Instances are used to keep parse state, name accordingly?
-# Adoption of https://en.wikipedia.org/wiki/Shunting-yard_algorithm
+#
+# This adapts the infix precedence handling and operator stack of the
+# {Shunting Yard Algorithm}[https://en.wikipedia.org/wiki/Shunting-yard_algorithm]
+# originally described by Edsger Dijkstra.
 class QueryParseTree
 
   DEFAULT_OP = :and
@@ -55,27 +58,31 @@ class QueryParseTree
 
   def initialize
     @node = [ DEFAULT_OP ]
-    @terms = []
     @ops = []
-    @last_term = false
+    @has_op = true
     $stderr.puts
   end
 
   def dump( fr )
-    $stderr.puts( "%2s terms: %-30s ops: %-12s node: %-30s" %
-                  [ fr, @terms.inspect, @ops.inspect, @node.inspect ] )
+    $stderr.puts( "%2s ops: %-12s node: %-30s" %
+                  [ fr, @ops.inspect, @node.inspect ] )
   end
 
   def push_term( t )
-    if @last_term
+    unless @has_op
       push_op( DEFAULT_OP )
     end
-    @terms << t
-    @last_term = true
+    @node << t
+    @has_op = false
     dump 'PT'
   end
 
   def push_op( op )
+    # Possible special case implied DEFAULT_OP in front of :not
+    # FIXME: Guard against DEFAULT_OP being set to not
+    if op == :not && !@has_op
+      push_op( DEFAULT_OP )
+    end
     loop do
       last = @ops.last
       if last && PRECEDENCE[op] <= PRECEDENCE[last]
@@ -87,7 +94,7 @@ class QueryParseTree
       end
     end
     @ops << op
-    @last_term = false
+    @has_op = true
     dump 'PO'
   end
 
@@ -96,21 +103,20 @@ class QueryParseTree
       op_to_node( last )
       dump 'FO'
     end
-    while( last = @terms.pop )
-      @node << last
-      dump 'FT'
-    end
-
     @node
   end
 
+  def pop_term
+    @node.pop if @node.length > 1
+  end
+
   def op_to_node( op )
-    o1 = @terms.pop
+    o1 = pop_term
     if o1
       if op == :not
         @node << [ :not, o1 ]
       else
-        o0 = @terms.pop
+        o0 = pop_term
         if o0
           if @node[0] == op
             @node << o0 << o1
@@ -361,6 +367,10 @@ class QueryParseTest < Minitest::Test
 
   def test_parse_precedence_5
     assert_equal( [ :and, [ :or, A, B ], [ :not, C ] ], TC.parse( 'a | b -c' ) )
+  end
+
+  def test_parse_precedence_5e
+    assert_equal( [ :and, [ :or, A, B ], [ :not, C ] ], TC.parse( 'a | b & -c' ) )
   end
 
   def test_parse_precedence_6

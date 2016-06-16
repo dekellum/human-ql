@@ -50,10 +50,7 @@ class QueryParseTree
   def self.parse( q )
     q = normalize( q )
     tokens = q ? q.split(' ') : []
-    # FIXME: Hackish :root workaround for tree_norm lack of top level norm
-    n = tree_norm( [ :root, parse_tree( tokens ) ] )
-    n = n[1] # may be nil
-    n
+    tree_norm( parse_tree( tokens ) )
   end
 
   def initialize
@@ -170,32 +167,26 @@ class QueryParseTree
 
   def self.tree_norm( node )
     op,*args = node
-    out = []
-    reduced = false
-    args.each do |a|
-      if a.is_a?( Array )
-        if a[0] == op || ( ( a[0] == :and || a[0] == :or ) && a.length < 3 )
-          a[1..-1].each do |aa|
-            if aa.is_a?( Array )
-              out << tree_norm( aa )
-            else
-              out << aa
-            end
-          end
-          reduced = true
-        else
-          out << tree_norm( a )
-        end
-      else
-        out << a
-      end
-    end
-    #FIXME: Doesn't reduce itself in length = 2 case?
-    n = [ op, *out ]
-    if reduced
-      tree_norm( n )
+    if ! node.is_a?( Array )
+      op
+    elsif args.empty?
+      # FIXME: warn "WTF? 1 #{op.inspect}" unless op.is_a?( String )
+      nil
     else
-      n
+      out = []
+      args.each do |a|
+        a = tree_norm( a )
+        if a.is_a?( Array ) && a[0] == op
+          out += a[1..-1]
+        elsif a
+          out << a
+        end
+      end
+      if ( op == :and || op == :or ) && out.length < 2
+        out[0]
+      else
+        [ op, *out ]
+      end
     end
   end
 
@@ -287,6 +278,14 @@ class QueryParseTest < Minitest::Test
   B = 'b'
   C = 'c'
   D = 'd'
+
+  def test_tree_norm_1
+    assert_equal( A, TC.tree_norm( [:or, [:and], A ] ) )
+  end
+
+  def test_tree_norm_2
+    assert_equal( [:and, A, B ], TC.tree_norm( [:and, [:and, A, B ] ] ) )
+  end
 
   def test_parse_basic_1
     assert_equal( 'a', TC.parse( 'a' ) )

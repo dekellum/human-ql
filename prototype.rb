@@ -316,6 +316,14 @@ class QueryParseTest < Minitest::Test
     assert_equal( [ :or, A, B ], TC.parse( 'a|b' ) )
   end
 
+  def test_parse_noop_1
+    assert_equal( A, TC.parse( '|a' ) )
+  end
+
+  def test_parse_noop_2
+    assert_equal( A, TC.parse( 'a|' ) )
+  end
+
   def test_parse_not_phrase
     assert_equal( [ :not, [ :phrase, A, B ] ], TC.parse( '-"a b"' ) )
   end
@@ -354,6 +362,10 @@ class QueryParseTest < Minitest::Test
 
   def test_parse_precedence_5
     assert_equal( [ :and, [ :or, A, B ], [ :not, C ] ], TC.parse( 'a | b -c' ) )
+  end
+
+  def test_parse_precedence_6
+    assert_equal( [ :and, [ :or, A, B ], [ :not, C ], D ], TC.parse( 'a | b -c d' ) )
   end
 
 end

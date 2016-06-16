@@ -332,6 +332,10 @@ class QueryParseTest < Minitest::Test
     assert_equal( [ :or, A, B ], TC.parse( 'a|b' ) )
   end
 
+  def test_parse_or_noop_0
+    assert_equal( nil, TC.parse( '|' ) )
+  end
+
   def test_parse_or_noop_1
     assert_equal( A, TC.parse( '|a' ) )
   end

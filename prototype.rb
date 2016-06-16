@@ -155,7 +155,7 @@ class QueryParseTree
       when OR_TOKEN
         s.push_op( :or )
       when AND_TOKEN
-        # ignore (DEFAULT)
+        s.push_op( :and )
       when NOT_TOKEN
         s.push_op( :not )
       else

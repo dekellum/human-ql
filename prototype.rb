@@ -314,24 +314,49 @@ class QueryParseTest < Minitest::Test
     assert_equal( nil, TC.parse( '' ) )
   end
 
+  def test_parse_empty_phrase
+    assert_equal( nil, TC.parse( '"' ) )
+    assert_equal( nil, TC.parse( '""' ) )
+  end
+
   def test_parse_not
     assert_equal( [ :not, A ], TC.parse( '-a' ) )
+  end
+
+  def test_parse_not_noop
+    assert_equal( nil, TC.parse( '-' ) )
   end
 
   def test_parse_or
     assert_equal( [ :or, A, B ], TC.parse( 'a|b' ) )
   end
 
-  def test_parse_noop_1
+  def test_parse_or_noop_1
     assert_equal( A, TC.parse( '|a' ) )
   end
 
-  def test_parse_noop_2
+  def test_parse_or_noop_2
     assert_equal( A, TC.parse( 'a|' ) )
+  end
+
+  def test_parse_and_noop_1
+    assert_equal( A, TC.parse( '&a' ) )
+  end
+
+  def test_parse_and_noop_2
+    assert_equal( A, TC.parse( 'a&' ) )
   end
 
   def test_parse_not_phrase
     assert_equal( [ :not, [ :phrase, A, B ] ], TC.parse( '-"a b"' ) )
+  end
+
+  def test_parse_parens_empty
+    assert_equal( nil, TC.parse( '()' ) )
+  end
+
+  def test_parse_parens_0
+    assert_equal( A, TC.parse( '(a)' ) )
   end
 
   def test_parse_parens_1

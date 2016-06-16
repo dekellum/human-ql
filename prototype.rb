@@ -50,7 +50,10 @@ class QueryParseTree
   def self.parse( q )
     q = normalize( q )
     tokens = q ? q.split(' ') : []
-    tree_norm( parse_tree( tokens ) )
+    # FIXME: Hackish :root workaround for tree_norm lack of top level norm
+    n = tree_norm( [ :root, parse_tree( tokens ) ] )
+    n = n[1] # may be nil
+    n
   end
 
   def initialize

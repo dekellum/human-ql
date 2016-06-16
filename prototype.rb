@@ -110,12 +110,12 @@ class QueryParseTree
       if op == :not
         @node << [ :not, o1 ]
       else
-        o2 = @terms.pop
-        if o2
+        o0 = @terms.pop
+        if o0
           if @node[0] == op
-            @node << o1 << o2
+            @node << o0 << o1
           else
-            @node << [ op, o1, o2 ]
+            @node << [ op, o0, o1 ]
           end
         else
           if @node[0] == op

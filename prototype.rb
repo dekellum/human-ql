@@ -19,9 +19,8 @@
 # In the absence of parentheses, ! (NOT) binds most tightly, and &
 # (AND) binds more tightly than | (OR).
 
-# FIXME:
-# Use an operator stack? Like: https://en.wikipedia.org/wiki/Shunting-yard_algorithm
-
+# FIXME: Instances are used to keep parse state, name accordingly?
+# Adoption of https://en.wikipedia.org/wiki/Shunting-yard_algorithm
 class QueryParseTree
 
   DEFAULT_OP = :and

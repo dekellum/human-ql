@@ -16,6 +16,9 @@
 # ":" when not matching a prefix, replace with space
 # "*" to_tsquery significant
 #
+# FIXME: Add support for disabling certain diabolic expressions like
+# top level not or not in top-level or branch, i.e.: "-rare" or "foo|-bar"
+#
 # Via https://www.postgresql.org/docs/9.5/static/datatype-textsearch.html
 #
 # In the absence of parentheses, ! (NOT) binds most tightly, and &

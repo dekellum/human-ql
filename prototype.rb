@@ -10,7 +10,7 @@
 # ALSO '-(A|B)'          --> [ :not, [ :or, A, B] ]
 # ALSO '-"a b"'          --> [ :not, [ :phrase, a b ] ]
 #
-# POSSIBLY IN FUTURE: PREFIX:( parenthetical... )
+# FIXME, Might add: PREFIX:( parenthetical... ) and PREFIX:"a phrase"
 #
 # FIXME: Additional special characters to be filtered out:
 # ":" when not matching a prefix, replace with space
@@ -33,23 +33,29 @@ class QueryParseTree
 
   DEFAULT_OP = :and
 
+  # Note: To limit surprises, the DEFAULT_OP should have the lowest
+  # PRECEDENCE
+
   PRECEDENCE = {
     not: 30,
     or: 20,
     and: 10
   }
 
+  # FIXME: Make these configurable/overridable. Via class instance
+  # variables, or methods? Also via `case...when` and `===`, these
+  # should work with either arbitrary Regexp or String constant.
+
   OR_TOKEN = /\A(OR|\|)\z/i
   AND_TOKEN = /\A(AND|\&)\z/i
   NOT_TOKEN = /\A(NOT|\-)\z/i
 
   PREFIX = /\A(FOO|BAR):(.+)/
-  # PREFIX_LPAREN = /\A(FOO|BAR):\(\z/
 
-  LQUOTE = /\A"\z/
-  RQUOTE = /\A"\z/
+  LQUOTE = '"'
+  RQUOTE = '"'
   LPAREN = /\A\(\z/
-  RPAREN = /\A\)\z/
+  RPAREN = ')'
 
   SP  = "[[:space:]]"
   NSP = "[^#{SP}]"
@@ -152,13 +158,13 @@ class QueryParseTree
     while ( t = tokens.shift )
       case t
       when LQUOTE
-        rqi = tokens.index { |t| t =~ RQUOTE }
+        rqi = tokens.index { |t| RQUOTE === t }
         if rqi
           s.push_term( [ :phrase, *tokens[0...rqi] ] )
           tokens = tokens[rqi+1..-1]
         end # else ignore
       when LPAREN
-        rpi = tokens.rindex { |t| t =~ RPAREN } #last
+        rpi = tokens.rindex { |t| RPAREN === t } #last
         if rpi
           s.push_term( parse_tree( tokens[0...rpi] ) )
           tokens = tokens[rpi+1..-1]

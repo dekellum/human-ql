@@ -8,17 +8,18 @@
 # NOT C, -C -> '- C'     --> [ :not, C ]
 # ALSO '-(A|B)'          --> [ :not, [ :or, A, B] ]
 # ALSO '-"a b"'          --> [ :not, [ :phrase, a b ] ]
+#
 # POSSIBLY IN FUTURE: PREFIX:( parenthetical... )
-
+#
 # FIXME: Additional special characters to be filtered out:
 # ":" when not matching a prefix, replace with space
 # "*" to_tsquery significant
-
+#
 # Via https://www.postgresql.org/docs/9.5/static/datatype-textsearch.html
 #
 # In the absence of parentheses, ! (NOT) binds most tightly, and &
 # (AND) binds more tightly than | (OR).
-
+#
 # FIXME: Instances are used to keep parse state, name accordingly?
 #
 # This adapts the infix precedence handling and operator stack of the
@@ -184,7 +185,7 @@ class QueryParseTree
         a = tree_norm( a )
         if a.is_a?( Array ) && a[0] == op
           out += a[1..-1]
-        elsif a
+        elsif a # filter nil
           out << a
         end
       end
@@ -208,7 +209,7 @@ class QueryParseTree
     q.gsub( /[()|&]/, ' \0 ' )
   end
 
-  # Split leading '-' to sepeate token
+  # Split leading '-' to separate token
   def self.norm_pre_split( q )
     q.gsub( /(?<=\A|#{SP})\-(?=#{NSP}+)/, '- ' )
   end

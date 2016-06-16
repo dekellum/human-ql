@@ -219,9 +219,9 @@ class QueryParseTree
 
   def self.normalize( q )
     q ||= ''
-    q = norm_quote_split( q )
     q = norm_opp_split( q )
     q = norm_pre_split( q )
+    q = norm_quote_split( q )
     q = norm_space( q )
     q unless q.empty?
   end

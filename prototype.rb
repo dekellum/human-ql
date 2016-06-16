@@ -55,6 +55,8 @@ class QueryParseTree
   NSP = "[^#{SP}]"
   SPS = /#{SP}+/
 
+  VERBOSE = ARGV.include?( '--verbose' )
+
   def self.parse( q )
     q = normalize( q )
     tokens = q ? q.split(' ') : []
@@ -65,12 +67,16 @@ class QueryParseTree
     @node = [ DEFAULT_OP ]
     @ops = []
     @has_op = true
-    $stderr.puts
+    log
+  end
+
+  def log( l = nil )
+    $stderr.puts( l ) if VERBOSE
   end
 
   def dump( fr )
-    $stderr.puts( "%2s ops: %-12s node: %-30s" %
-                  [ fr, @ops.inspect, @node.inspect ] )
+    log( "%2s ops: %-12s node: %-30s" %
+         [ fr, @ops.inspect, @node.inspect ] )
   end
 
   def push_term( t )
@@ -137,7 +143,7 @@ class QueryParseTree
         end
       end
     else
-      $stderr.puts "No o1?"
+      log "No argument to #{op.inspect}, ignoring"
     end
   end
 

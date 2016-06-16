@@ -305,11 +305,15 @@ class QueryParseTest < Minitest::Test
     assert_equal( nil, TC.parse( '' ) )
   end
 
+  def test_parse_not
+    assert_equal( [ :not, A ], TC.parse( '-a' ) )
+  end
+
   def test_parse_or
     assert_equal( [ :or, A, B ], TC.parse( 'a|b' ) )
   end
 
-  def test_parse_not
+  def test_parse_not_phrase
     assert_equal( [ :not, [ :phrase, A, B ] ], TC.parse( '-"a b"' ) )
   end
 

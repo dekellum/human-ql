@@ -285,18 +285,24 @@ class QueryParseTest < Minitest::Test
   C = 'c'
   D = 'd'
 
-  def test_parse_basic
-    assert_equal( [ :and, A ], TC.parse( 'a' ) )
-    assert_equal( [ :and, [ 'FOO', A ] ], TC.parse( 'FOO:a' ) )
+  def test_parse_basic_1
+    assert_equal( 'a', TC.parse( 'a' ) )
+  end
+
+  def test_parse_basic_2
+    assert_equal( [ 'FOO', A ], TC.parse( 'FOO:a' ) )
+  end
+
+  def test_parse_basic_3
     assert_equal( [ :and, A, B ], TC.parse( 'a b' ) )
   end
 
   def test_parse_phrase
-    assert_equal( [ :and, [ :phrase, A, B ] ], TC.parse( '"a b"' ) ) #FIXME
+    assert_equal( [ :phrase, A, B ], TC.parse( '"a b"' ) )
   end
 
   def test_parse_empty
-    assert_equal( [ :and ], TC.parse( '' ) ) #FIXME
+    assert_equal( nil, TC.parse( '' ) )
   end
 
   def test_parse_or

@@ -99,7 +99,7 @@ class QueryParseTree
     dump 'PO'
   end
 
-  def final_tree
+  def flush_tree
     while( last = @ops.pop )
       op_to_node( last )
       dump 'FO'
@@ -169,7 +169,7 @@ class QueryParseTree
         s.push_term( t )
       end
     end
-    s.final_tree
+    s.flush_tree
   end
 
   def self.tree_norm( node )

@@ -310,126 +310,130 @@ class QueryParseTest < Minitest::Test
     assert_equal( [:and, A, B ], TC.tree_norm( [:and, [:and, A, B ] ] ) )
   end
 
+  def assert_parse( expected_tree, input )
+    assert_equal( expected_tree, TC.parse( input ), input )
+  end
+
   def test_parse_basic_1
-    assert_equal( 'a', TC.parse( 'a' ) )
+    assert_parse( 'a', 'a' )
   end
 
   def test_parse_basic_2
-    assert_equal( [ 'FOO', A ], TC.parse( 'FOO:a' ) )
+    assert_parse( [ 'FOO', A ], 'FOO:a' )
   end
 
   def test_parse_basic_3
-    assert_equal( [ :and, A, B ], TC.parse( 'a b' ) )
+    assert_parse( [ :and, A, B ], 'a b' )
   end
 
   def test_parse_phrase
-    assert_equal( [ :phrase, A, B ], TC.parse( '"a b"' ) )
+    assert_parse( [ :phrase, A, B ], '"a b"' )
   end
 
   def test_parse_empty
-    assert_equal( nil, TC.parse( '' ) )
+    assert_parse( nil, '' )
   end
 
   def test_parse_empty_phrase
-    assert_equal( nil, TC.parse( '"' ) )
-    assert_equal( nil, TC.parse( '""' ) )
+    assert_parse( nil, '"' )
+    assert_parse( nil, '""' )
   end
 
   def test_parse_not
-    assert_equal( [ :not, A ], TC.parse( '-a' ) )
+    assert_parse( [ :not, A ], '-a' )
   end
 
   def test_parse_not_noop
-    assert_equal( nil, TC.parse( '-' ) )
+    assert_parse( nil, '-' )
   end
 
   def test_parse_or
-    assert_equal( [ :or, A, B ], TC.parse( 'a|b' ) )
+    assert_parse( [ :or, A, B ], 'a|b' )
   end
 
   def test_parse_or_noop_0
-    assert_equal( nil, TC.parse( '|' ) )
-    assert_equal( nil, TC.parse( '||' ) )
-    assert_equal( nil, TC.parse( '|&' ) )
-    assert_equal( nil, TC.parse( '&|' ) )
-    assert_equal( nil, TC.parse( '-|' ) )
-    assert_equal( nil, TC.parse( '|-' ) )
+    assert_parse( nil, '|' )
+    assert_parse( nil, '||' )
+    assert_parse( nil, '|&' )
+    assert_parse( nil, '&|' )
+    assert_parse( nil, '-|' )
+    assert_parse( nil, '|-' )
   end
 
   def test_parse_or_noop_1
-    assert_equal( A, TC.parse( '|a' ) )
+    assert_parse( A, '|a' )
   end
 
   def test_parse_or_noop_2
-    assert_equal( A, TC.parse( 'a|' ) )
+    assert_parse( A, 'a|' )
   end
 
   def test_parse_and_noop_1
-    assert_equal( A, TC.parse( '&a' ) )
+    assert_parse( A, '&a' )
   end
 
   def test_parse_and_noop_2
-    assert_equal( A, TC.parse( 'a&' ) )
+    assert_parse( A, 'a&' )
   end
 
   def test_parse_not_phrase
-    assert_equal( [ :not, [ :phrase, A, B ] ], TC.parse( '-"a b"' ) )
+    assert_parse( [ :not, [ :phrase, A, B ] ], '-"a b"' )
   end
 
   def test_parse_parens_empty
-    assert_equal( nil, TC.parse( '()' ) )
+    assert_parse( nil, '()' )
   end
 
   def test_parse_parens_0
-    assert_equal( A, TC.parse( '(a)' ) )
+    assert_parse( A, '(a)' )
   end
 
   def test_parse_parens_1
-    assert_equal( [ :and, A, B ], TC.parse( '(a b)' ) )
+    assert_parse( [ :and, A, B ], '(a b)' )
   end
 
   def test_parse_parens_2
-    assert_equal( [ :and, [ :or, A, B ], C ], TC.parse( '(a|b) c' ) )
+    assert_parse( [ :and, [ :or, A, B ], C ], '(a|b) c' )
   end
 
   def test_parse_parens_3
-    assert_equal( [ :and, C, [ :or, A, B ] ], TC.parse( 'c (a|b)' ) )
+    assert_parse( [ :and, C, [ :or, A, B ] ], 'c (a|b)' )
   end
 
   def test_parse_parens_4
-    assert_equal( [ :and, D, [ :or, A, B, C ] ], TC.parse( 'd (a|b|c)' ) )
+    assert_parse( [ :and, D, [ :or, A, B, C ] ], 'd (a|b|c)' )
   end
 
   def test_parse_precedence_1
-    assert_equal( [ :and, [ :or, A, B ], C ], TC.parse( 'a | b c' ) )
+    assert_parse( [ :and, [ :or, A, B ], C ], 'a | b c' )
   end
 
   def test_parse_precedence_2
-    assert_equal( [ :and, A, [ :or, B, C ] ], TC.parse( 'a b | c' ) )
+    assert_parse( [ :and, A, [ :or, B, C ] ], 'a b | c' )
   end
 
   def test_parse_precedence_3
-    assert_equal( [ :and, [ :or, A, [ :not, B ] ], C ], TC.parse( 'a | - b c' ) )
+    assert_parse( [ :and, [ :or, A, [ :not, B ] ], C ], 'a | - b c' )
   end
 
   def test_parse_precedence_4_explicit
-    assert_equal( [ :and, [ :or, [ :not, A ], B ], C ], TC.parse( '-a | b & c' ) )
+    assert_parse( [ :and, [ :or, [ :not, A ], B ], C ], '-a | b & c' )
   end
 
   def test_parse_precedence_4_implied
-    assert_equal( [ :and, [ :or, [ :not, A ], B ], C ], TC.parse( '-a | b c' ) )
+    assert_parse( [ :and, [ :or, [ :not, A ], B ], C ], '-a | b c' )
   end
 
   def test_parse_precedence_5_explicit
-    assert_equal( [ :and, [ :or, A, B ], [ :not, C ] ], TC.parse( 'a | b AND -c' ) )
+    assert_parse( [ :and, [ :or, A, B ], [ :not, C ] ], 'a | b AND -c' )
   end
 
   def test_parse_precedence_5_implied
-    assert_equal( [ :and, [ :or, A, B ], [ :not, C ] ], TC.parse( 'a | b -c' ) )
+    assert_parse( [ :and, [ :or, A, B ], [ :not, C ] ], 'a | b -c' )
   end
 
   def test_parse_precedence_6
-    assert_equal( [ :and, [ :or, A, B ], [ :not, C ], D ], TC.parse( 'a | b -c d' ) )
+    assert_parse( [ :and, [ :or, A, B ], [ :not, C ], D ], 'a | b -c d' )
   end
 
 end

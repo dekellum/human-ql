@@ -24,44 +24,45 @@
 # In the absence of parentheses, ! (NOT) binds most tightly, and &
 # (AND) binds more tightly than | (OR).
 #
-# FIXME: Instances are used to keep parse state, name accordingly?
-#
 # This adapts the infix precedence handling and operator stack of the
 # {Shunting Yard Algorithm}[https://en.wikipedia.org/wiki/Shunting-yard_algorithm]
 # originally described by Edsger Dijkstra.
-class QueryParseTree
+#
+# This class serves as a container of various contants. These are
+# always referenced internally via `self::` so that they may be
+# overridden with matching named contants in a derived class.
+# The token matching constants are matched via `===` so that either
+# Regexp or String values may be set.
+class QueryParser
 
+  # The default operator to use when no (infix) operator is given
+  # between terms.
   DEFAULT_OP = :and
 
-  # Note: To limit surprises, the DEFAULT_OP should have the lowest
-  # PRECEDENCE
-
+  # Lookup Hash for the precedence of supported operators.  To limit
+  # user surprise, the DEFAULT_OP should be lowest.
   PRECEDENCE = {
     not: 30,
     or: 20,
     and: 10
-  }
+  }.freeze
 
-  # FIXME: Make these configurable/overridable. Via class instance
-  # variables, or methods? Also via `case...when` and `===`, these
-  # should work with either arbitrary Regexp or String constant.
+  OR_TOKEN = /\A(OR|\|)\z/i.freeze
+  AND_TOKEN = /\A(AND|\&)\z/i.freeze
+  NOT_TOKEN = /\A(NOT|\-)\z/i.freeze
 
-  OR_TOKEN = /\A(OR|\|)\z/i
-  AND_TOKEN = /\A(AND|\&)\z/i
-  NOT_TOKEN = /\A(NOT|\-)\z/i
+  PREFIX = /\A(FOO|BAR):(.+)/.freeze
 
-  PREFIX = /\A(FOO|BAR):(.+)/
+  LQUOTE = '"'.freeze
+  RQUOTE = '"'.freeze
+  LPAREN = /\A\(\z/.freeze
+  RPAREN = ')'.freeze
 
-  LQUOTE = '"'
-  RQUOTE = '"'
-  LPAREN = /\A\(\z/
-  RPAREN = ')'
+  SP  = "[[:space:]]".freeze
+  NSP = "[^#{SP}]".freeze
+  SPS = /#{SP}+/.freeze
 
-  SP  = "[[:space:]]"
-  NSP = "[^#{SP}]"
-  SPS = /#{SP}+/
-
-  VERBOSE = ARGV.include?( '--verbose' )
+  VERBOSE = false
 
   def self.parse( q )
     q = normalize( q )
@@ -69,117 +70,33 @@ class QueryParseTree
     tree_norm( parse_tree( tokens ) )
   end
 
-  def initialize
-    @node = [ DEFAULT_OP ]
-    @ops = []
-    @has_op = true
-    log
-  end
-
-  def log( l = nil )
-    $stderr.puts( l ) if VERBOSE
-  end
-
-  def dump( fr )
-    log( "%2s ops: %-12s node: %-30s" %
-         [ fr, @ops.inspect, @node.inspect ] )
-  end
-
-  def push_term( t )
-    unless @has_op
-      push_op( DEFAULT_OP )
-    end
-    @node << t
-    @has_op = false
-    dump 'PT'
-  end
-
-  def push_op( op )
-    # Possible special case implied DEFAULT_OP in front of :not
-    # FIXME: Guard against DEFAULT_OP being set to not
-    if op == :not && !@has_op
-      push_op( DEFAULT_OP )
-    end
-    loop do
-      last = @ops.last
-      if last && PRECEDENCE[op] <= PRECEDENCE[last]
-        @ops.pop
-        op_to_node( last )
-        dump 'PL'
-      else
-        break
-      end
-    end
-    @ops << op
-    @has_op = true
-    dump 'PO'
-  end
-
-  def flush_tree
-    while( last = @ops.pop )
-      op_to_node( last )
-      dump 'FO'
-    end
-    @node
-  end
-
-  def pop_term
-    @node.pop if @node.length > 1
-  end
-
-  def op_to_node( op )
-    o1 = pop_term
-    if o1
-      if op == :not
-        @node << [ :not, o1 ]
-      else
-        o0 = pop_term
-        if o0
-          if @node[0] == op
-            @node << o0 << o1
-          else
-            @node << [ op, o0, o1 ]
-          end
-        else
-          if @node[0] == op
-            @node << o1
-          else
-            @node = [ op, @node, o1 ]
-          end
-        end
-      end
-    else
-      log "No argument to #{op.inspect}, ignoring"
-    end
-  end
-
   def self.parse_tree( tokens )
-    s = new
+    s = ParseState.new( self )
     while ( t = tokens.shift )
       case t
-      when LQUOTE
-        rqi = tokens.index { |t| RQUOTE === t }
+      when self::LQUOTE
+        rqi = tokens.index { |tt| self::RQUOTE === tt }
         if rqi
           s.push_term( [ :phrase, *tokens[0...rqi] ] )
           tokens = tokens[rqi+1..-1]
         end # else ignore
-      when LPAREN
-        rpi = tokens.rindex { |t| RPAREN === t } #last
+      when self::LPAREN
+        rpi = tokens.rindex { |tt| self::RPAREN === tt } #last
         if rpi
           s.push_term( parse_tree( tokens[0...rpi] ) )
           tokens = tokens[rpi+1..-1]
         end # else ignore
-      when RQUOTE
+      when self::RQUOTE
         #ignore
-      when RPAREN
+      when self::RPAREN
         #ignore
-      when PREFIX
+      when self::PREFIX
         s.push_term( [ $1, $2 ] )
-      when OR_TOKEN
+      when self::OR_TOKEN
         s.push_op( :or )
-      when AND_TOKEN
+      when self::AND_TOKEN
         s.push_op( :and )
-      when NOT_TOKEN
+      when self::NOT_TOKEN
         s.push_op( :not )
       else
         s.push_term( t )
@@ -243,14 +160,108 @@ class QueryParseTree
     q unless q.empty?
   end
 
-end
+  class ParseState
 
-# QueryParseTree.parse( "a b c")
+    def initialize( constants )
+      @cm = constants
+      @node = [ @cm::DEFAULT_OP ]
+      @ops = []
+      @has_op = true
+      log
+    end
+
+    def log( l = nil )
+      $stderr.puts( l ) if @cm::VERBOSE
+    end
+
+    def dump( fr )
+      log( "%2s ops: %-12s node: %-30s" %
+           [ fr, @ops.inspect, @node.inspect ] )
+    end
+
+    def push_term( t )
+      unless @has_op
+        push_op( @cm::DEFAULT_OP )
+      end
+      @node << t
+      @has_op = false
+      dump 'PT'
+    end
+
+    def precedence_lte?( op1, op2 )
+      @cm::PRECEDENCE[op1] <= @cm::PRECEDENCE[op2]
+    end
+
+    def push_op( op )
+      # Possible special case implied DEFAULT_OP in front of :not
+      # FIXME: Guard against DEFAULT_OP being set to not
+      if op == :not && !@has_op
+        push_op( @cm::DEFAULT_OP )
+      end
+      loop do
+        last = @ops.last
+        if last && precedence_lte?( op, last )
+          @ops.pop
+          op_to_node( last )
+          dump 'PL'
+        else
+          break
+        end
+      end
+      @ops << op
+      @has_op = true
+      dump 'PO'
+    end
+
+    def flush_tree
+      while( last = @ops.pop )
+        op_to_node( last )
+        dump 'FO'
+      end
+      @node
+    end
+
+    def pop_term
+      @node.pop if @node.length > 1
+    end
+
+    def op_to_node( op )
+      o1 = pop_term
+      if o1
+        if op == :not
+          @node << [ :not, o1 ]
+        else
+          o0 = pop_term
+          if o0
+            if @node[0] == op
+              @node << o0 << o1
+            else
+              @node << [ op, o0, o1 ]
+            end
+          else
+            if @node[0] == op
+              @node << o1
+            else
+              @node = [ op, @node, o1 ]
+            end
+          end
+        end
+      else
+        log "No argument to #{op.inspect}, ignoring"
+      end
+    end
+  end
+
+end
 
 require 'minitest/autorun'
 
-class QueryParseTest < Minitest::Test
-  TC = QueryParseTree
+class TestingQueryParser < QueryParser
+  VERBOSE = ARGV.include?( '--verbose' )
+end
+
+class QueryParserTest < Minitest::Test
+  TC = TestingQueryParser
 
   def test_norm_pre_split
     assert_equal( '-',      TC.norm_pre_split( '-' ) )

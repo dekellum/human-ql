@@ -39,7 +39,7 @@ module HumanFT
 
     SP  = "[[:space:]]".freeze
     NSP = "[^#{SP}]".freeze
-    SPS = /#{SP}+/.freeze
+    SPACES = /#{SP}+/.freeze
 
     # Lookup Hash for the precedence of supported operators.  To limit
     # user surprise, the DEFAULT_OP should be lowest.
@@ -60,16 +60,19 @@ module HumanFT
     LPAREN = '('.freeze
     RPAREN = ')'.freeze
 
+    INFIX_TOKEN = /[()|&"]/.freeze
+    PREFIX_TOKEN = /(?<=\A|#{SP})-(?=#{NSP})/.freeze
+
     private_constant :PRECEDENCE, :OR_TOKEN, :AND_TOKEN, :NOT_TOKEN,
                      :PREFIX, :LQUOTE, :RQUOTE, :LPAREN, :RPAREN
-                     #:SP, :NSP, :SPS
+                     #:SP, :NSP, :SPACES
 
     attr_reader :default_op, :precedence, :verbose
 
     def initialize( opts = {} )
       @default_op = :and
       @precedence = PRECEDENCE
-      @spaces = SPS
+      @spaces = SPACES
       @or_token  =  OR_TOKEN
       @and_token = AND_TOKEN
       @not_token = NOT_TOKEN
@@ -79,6 +82,8 @@ module HumanFT
       @lparen = LPAREN
       @rparen = RPAREN
       @verbose = false
+      @infix_token = INFIX_TOKEN
+      @prefix_token = PREFIX_TOKEN
 
       opts.each do |k,v|
         var = "@#{k}".to_sym
@@ -156,21 +161,16 @@ module HumanFT
       end
     end
 
-    def norm_quote_split( q )
-      q.gsub( /(?<=\A|#{SP})"(?=#{NSP}+)/, '" ' ).
-        gsub( /(?<=#{NSP})"(?=#{SP}|\z)/, ' "' )
-    end
-
     # Treat various punctuation form operators as _always_ being
     # seperate tokens.
-    # Must always call norm_space _after_ this
-    def norm_opp_split( q )
-      q.gsub( /[()|&]/, ' \0 ' )
+    # Note: Must always call norm_space _after_ this
+    def norm_infix( q )
+      q.gsub( @infix_token, ' \0 ' )
     end
 
-    # Split leading '-' to separate token
-    def norm_pre_split( q )
-      q.gsub( /(?<=\A|#{SP})\-(?=#{NSP}+)/, '- ' )
+    # Split prefixes as seperate tokens
+    def norm_prefix( q )
+      q.gsub( @prefix_token, '\0 ' )
     end
 
     def norm_space( q )
@@ -179,9 +179,8 @@ module HumanFT
 
     def normalize( q )
       q ||= ''
-      q = norm_opp_split( q )
-      q = norm_pre_split( q )
-      q = norm_quote_split( q )
+      q = norm_infix( q )
+      q = norm_prefix( q )
       q = norm_space( q )
       q unless q.empty?
     end
@@ -298,34 +297,34 @@ end
 class QueryParserTest < Minitest::Test
   TC = TestingQueryParser.new
 
-  def test_norm_pre_split
-    assert_equal( '-',      TC.norm_pre_split( '-' ) )
-    assert_equal( '- ',     TC.norm_pre_split( '- ' ) )
-    assert_equal( 'a-b',    TC.norm_pre_split( 'a-b' ) )
-    assert_equal( '- a',    TC.norm_pre_split( '-a' ) )
-    assert_equal( '- ab',   TC.norm_pre_split( '-ab' ) )
-    assert_equal( 'a - b',  TC.norm_pre_split( 'a -b' ) )
-    assert_equal( 'a - bc', TC.norm_pre_split( 'a -bc' ) )
+  def test_norm_prefix
+    assert_equal( '-',      TC.norm_prefix( '-' ) )
+    assert_equal( '- ',     TC.norm_prefix( '- ' ) )
+    assert_equal( 'a-b',    TC.norm_prefix( 'a-b' ) )
+    assert_equal( '- a',    TC.norm_prefix( '-a' ) )
+    assert_equal( '- ab',   TC.norm_prefix( '-ab' ) )
+    assert_equal( 'a - b',  TC.norm_prefix( 'a -b' ) )
+    assert_equal( 'a - bc', TC.norm_prefix( 'a -bc' ) )
   end
 
-  def test_norm_quote_split
-    assert_equal( '"',        TC.norm_quote_split( '"' ) )
-    assert_equal( '" ',       TC.norm_quote_split( '" ' ) )
-    assert_equal( 'a"b',      TC.norm_quote_split( 'a"b' ) )
-    assert_equal( '" a',      TC.norm_quote_split( '"a' ) )
-    assert_equal( '" ab "',   TC.norm_quote_split( '"ab"' ) )
-    assert_equal( 'a " b "',  TC.norm_quote_split( 'a "b"' ) )
-    assert_equal( 'a " bc "', TC.norm_quote_split( 'a "bc"' ) )
+  def test_norm_quote
+    assert_equal( ' " ',        TC.norm_infix( '"' ) )
+    assert_equal( ' "  ',       TC.norm_infix( '" ' ) )
+    assert_equal( 'a " b',      TC.norm_infix( 'a"b' ) )
+    assert_equal( ' " a',       TC.norm_infix( '"a' ) )
+    assert_equal( ' " ab " ',   TC.norm_infix( '"ab"' ) )
+    assert_equal( 'a  " b " ',  TC.norm_infix( 'a "b"' ) )
+    assert_equal( 'a  " bc " ', TC.norm_infix( 'a "bc"' ) )
   end
 
   def test_norm_parens_split
-    assert_equal( ' ( ',        TC.norm_opp_split( '(' ) )
-    assert_equal( ' (  ',       TC.norm_opp_split( '( ' ) )
-    assert_equal( ' ( a ) ',    TC.norm_opp_split( '(a)' ) )
-    assert_equal( ' ( ab ) ',   TC.norm_opp_split( '(ab)' ) )
-    assert_equal( 'a  ( b ) ',  TC.norm_opp_split( 'a (b)' ) )
-    assert_equal( 'a  ( bc ) ', TC.norm_opp_split( 'a (bc)' ) )
-    assert_equal( 'a ( b ) ',   TC.norm_opp_split( 'a(b)' ) )
+    assert_equal( ' ( ',        TC.norm_infix( '(' ) )
+    assert_equal( ' (  ',       TC.norm_infix( '( ' ) )
+    assert_equal( ' ( a ) ',    TC.norm_infix( '(a)' ) )
+    assert_equal( ' ( ab ) ',   TC.norm_infix( '(ab)' ) )
+    assert_equal( 'a  ( b ) ',  TC.norm_infix( 'a (b)' ) )
+    assert_equal( 'a  ( bc ) ', TC.norm_infix( 'a (bc)' ) )
+    assert_equal( 'a ( b ) ',   TC.norm_infix( 'a(b)' ) )
   end
 
   def test_norm_space

@@ -33,235 +33,270 @@
 # overridden with matching named contants in a derived class.
 # The token matching constants are matched via `===` so that either
 # Regexp or String values may be set.
-class QueryParser
+module HumanFT
 
-  # The default operator to use when no (infix) operator is given
-  # between terms.
-  DEFAULT_OP = :and
+  class QueryParser
 
-  # Lookup Hash for the precedence of supported operators.  To limit
-  # user surprise, the DEFAULT_OP should be lowest.
-  PRECEDENCE = {
-    not: 30,
-    or: 20,
-    and: 10
-  }.freeze
+    SP  = "[[:space:]]".freeze
+    NSP = "[^#{SP}]".freeze
+    SPS = /#{SP}+/.freeze
 
-  OR_TOKEN = /\A(OR|\|)\z/i.freeze
-  AND_TOKEN = /\A(AND|\&)\z/i.freeze
-  NOT_TOKEN = /\A(NOT|\-)\z/i.freeze
+    # Lookup Hash for the precedence of supported operators.  To limit
+    # user surprise, the DEFAULT_OP should be lowest.
+    PRECEDENCE = {
+      not: 3,
+      or:  2,
+      and: 1
+    }.freeze
 
-  PREFIX = /\A(FOO|BAR):(.+)/.freeze
+    OR_TOKEN = /\A(OR|\|)\z/i.freeze
+    AND_TOKEN = /\A(AND|\&)\z/i.freeze
+    NOT_TOKEN = /\A(NOT|\-)\z/i.freeze
 
-  LQUOTE = '"'.freeze
-  RQUOTE = '"'.freeze
-  LPAREN = /\A\(\z/.freeze
-  RPAREN = ')'.freeze
+    PREFIX = /\A(FOO|BAR):(.+)/.freeze
 
-  SP  = "[[:space:]]".freeze
-  NSP = "[^#{SP}]".freeze
-  SPS = /#{SP}+/.freeze
+    LQUOTE = '"'.freeze
+    RQUOTE = '"'.freeze
+    LPAREN = '('.freeze
+    RPAREN = ')'.freeze
 
-  VERBOSE = false
+    private_constant :PRECEDENCE, :OR_TOKEN, :AND_TOKEN, :NOT_TOKEN,
+                     :PREFIX, :LQUOTE, :RQUOTE, :LPAREN, :RPAREN
+                     #:SP, :NSP, :SPS
 
-  def self.parse( q )
-    q = normalize( q )
-    tokens = q ? q.split(' ') : []
-    tree_norm( parse_tree( tokens ) )
-  end
+    attr_reader :default_op, :precedence, :verbose
 
-  def self.parse_tree( tokens )
-    s = ParseState.new( self )
-    while ( t = tokens.shift )
-      case t
-      when self::LQUOTE
-        rqi = tokens.index { |tt| self::RQUOTE === tt }
-        if rqi
-          s.push_term( [ :phrase, *tokens[0...rqi] ] )
-          tokens = tokens[rqi+1..-1]
-        end # else ignore
-      when self::LPAREN
-        rpi = tokens.rindex { |tt| self::RPAREN === tt } #last
-        if rpi
-          s.push_term( parse_tree( tokens[0...rpi] ) )
-          tokens = tokens[rpi+1..-1]
-        end # else ignore
-      when self::RQUOTE
-        #ignore
-      when self::RPAREN
-        #ignore
-      when self::PREFIX
-        s.push_term( [ $1, $2 ] )
-      when self::OR_TOKEN
-        s.push_op( :or )
-      when self::AND_TOKEN
-        s.push_op( :and )
-      when self::NOT_TOKEN
-        s.push_op( :not )
-      else
-        s.push_term( t )
-      end
-    end
-    s.flush_tree
-  end
+    def initialize( opts = {} )
+      @default_op = :and
+      @precedence = PRECEDENCE
+      @spaces = SPS
+      @or_token  =  OR_TOKEN
+      @and_token = AND_TOKEN
+      @not_token = NOT_TOKEN
+      @prefix = PREFIX
+      @lquote = LQUOTE
+      @rquote = RQUOTE
+      @lparen = LPAREN
+      @rparen = RPAREN
+      @verbose = false
 
-  def self.tree_norm( node )
-    op,*args = node
-    if ! node.is_a?( Array )
-      op
-    elsif args.empty?
-      # FIXME: warn "WTF? 1 #{op.inspect}" unless op.is_a?( String )
-      nil
-    else
-      out = []
-      args.each do |a|
-        a = tree_norm( a )
-        if a.is_a?( Array ) && a[0] == op
-          out += a[1..-1]
-        elsif a # filter nil
-          out << a
+      opts.each do |k,v|
+        var = "@#{k}".to_sym
+        if instance_variable_defined?( var )
+          instance_variable_set( var, v )
+        else
+          raise "QueryParser unsupported option #{k.inspect}"
         end
       end
-      if ( op == :and || op == :or ) && out.length < 2
-        out[0]
-      else
-        [ op, *out ]
-      end
-    end
-  end
-
-  def self.norm_quote_split( q )
-    q.gsub( /(?<=\A|#{SP})"(?=#{NSP}+)/, '" ' ).
-      gsub( /(?<=#{NSP})"(?=#{SP}|\z)/, ' "' )
-  end
-
-  # Treat various punctuation form operators as _always_ being
-  # seperate tokens.
-  # Must always call norm_space _after_ this
-  def self.norm_opp_split( q )
-    q.gsub( /[()|&]/, ' \0 ' )
-  end
-
-  # Split leading '-' to separate token
-  def self.norm_pre_split( q )
-    q.gsub( /(?<=\A|#{SP})\-(?=#{NSP}+)/, '- ' )
-  end
-
-  def self.norm_space( q )
-    q.gsub(SPS, ' ').strip
-  end
-
-  def self.normalize( q )
-    q ||= ''
-    q = norm_opp_split( q )
-    q = norm_pre_split( q )
-    q = norm_quote_split( q )
-    q = norm_space( q )
-    q unless q.empty?
-  end
-
-  class ParseState
-
-    def initialize( constants )
-      @cm = constants
-      @node = [ @cm::DEFAULT_OP ]
-      @ops = []
-      @has_op = true
-      log
     end
 
-    def log( l = nil )
-      $stderr.puts( l ) if @cm::VERBOSE
+    def parse( q )
+      q = normalize( q )
+      tokens = q ? q.split(' ') : []
+      tree_norm( parse_tree( tokens ) )
     end
 
-    def dump( fr )
-      log( "%2s ops: %-12s node: %-30s" %
-           [ fr, @ops.inspect, @node.inspect ] )
-    end
-
-    def push_term( t )
-      unless @has_op
-        push_op( @cm::DEFAULT_OP )
-      end
-      @node << t
-      @has_op = false
-      dump 'PT'
-    end
-
-    def precedence_lte?( op1, op2 )
-      @cm::PRECEDENCE[op1] <= @cm::PRECEDENCE[op2]
-    end
-
-    def push_op( op )
-      # Possible special case implied DEFAULT_OP in front of :not
-      # FIXME: Guard against DEFAULT_OP being set to not
-      if op == :not && !@has_op
-        push_op( @cm::DEFAULT_OP )
-      end
-      loop do
-        last = @ops.last
-        if last && precedence_lte?( op, last )
-          @ops.pop
-          op_to_node( last )
-          dump 'PL'
+    def parse_tree( tokens )
+      s = ParseState.new( self )
+      while ( t = tokens.shift )
+        case t
+        when @lquote
+          rqi = tokens.index { |tt| @rquote === tt }
+          if rqi
+            s.push_term( [ :phrase, *tokens[0...rqi] ] )
+            tokens = tokens[rqi+1..-1]
+          end # else ignore
+        when @lparen
+          rpi = tokens.rindex { |tt| @rparen === tt } #last
+          if rpi
+            s.push_term( parse_tree( tokens[0...rpi] ) )
+            tokens = tokens[rpi+1..-1]
+          end # else ignore
+        when @rquote
+        #ignore
+        when @rparen
+        #ignore
+        when @prefix
+          s.push_term( [ $1, $2 ] )
+        when @or_token
+          s.push_op( :or )
+        when @and_token
+          s.push_op( :and )
+        when @not_token
+          s.push_op( :not )
         else
-          break
+          s.push_term( t )
         end
       end
-      @ops << op
-      @has_op = true
-      dump 'PO'
+      s.flush_tree
     end
 
-    def flush_tree
-      while( last = @ops.pop )
-        op_to_node( last )
-        dump 'FO'
-      end
-      @node
-    end
-
-    def pop_term
-      @node.pop if @node.length > 1
-    end
-
-    def op_to_node( op )
-      o1 = pop_term
-      if o1
-        if op == :not
-          @node << [ :not, o1 ]
-        else
-          o0 = pop_term
-          if o0
-            if @node[0] == op
-              @node << o0 << o1
-            else
-              @node << [ op, o0, o1 ]
-            end
-          else
-            if @node[0] == op
-              @node << o1
-            else
-              @node = [ op, @node, o1 ]
-            end
+    def tree_norm( node )
+      op,*args = node
+      if ! node.is_a?( Array )
+        op
+      elsif args.empty?
+        # FIXME: warn "WTF? 1 #{op.inspect}" unless op.is_a?( String )
+        nil
+      else
+        out = []
+        args.each do |a|
+          a = tree_norm( a )
+          if a.is_a?( Array ) && a[0] == op
+            out += a[1..-1]
+          elsif a # filter nil
+            out << a
           end
         end
-      else
-        log "No argument to #{op.inspect}, ignoring"
+        if ( op == :and || op == :or ) && out.length < 2
+          out[0]
+        else
+          [ op, *out ]
+        end
       end
     end
+
+    def norm_quote_split( q )
+      q.gsub( /(?<=\A|#{SP})"(?=#{NSP}+)/, '" ' ).
+        gsub( /(?<=#{NSP})"(?=#{SP}|\z)/, ' "' )
+    end
+
+    # Treat various punctuation form operators as _always_ being
+    # seperate tokens.
+    # Must always call norm_space _after_ this
+    def norm_opp_split( q )
+      q.gsub( /[()|&]/, ' \0 ' )
+    end
+
+    # Split leading '-' to separate token
+    def norm_pre_split( q )
+      q.gsub( /(?<=\A|#{SP})\-(?=#{NSP}+)/, '- ' )
+    end
+
+    def norm_space( q )
+      q.gsub(@spaces, ' ').strip
+    end
+
+    def normalize( q )
+      q ||= ''
+      q = norm_opp_split( q )
+      q = norm_pre_split( q )
+      q = norm_quote_split( q )
+      q = norm_space( q )
+      q unless q.empty?
+    end
+
+    class ParseState
+
+      def initialize( parser )
+        @default_op = parser.default_op
+        @precedence = parser.precedence
+        @verbose = parser.verbose
+        @node = [ @default_op ]
+        @ops = []
+        @has_op = true
+        log
+      end
+
+      def log( l = nil )
+        $stderr.puts( l ) if @verbose
+      end
+
+      def dump( fr )
+        if @verbose
+          log( "%2s ops: %-12s node: %-30s" %
+               [ fr, @ops.inspect, @node.inspect ] )
+        end
+      end
+
+      def push_term( t )
+        unless @has_op
+          push_op( @default_op )
+        end
+        @node << t
+        @has_op = false
+        dump 'PT'
+      end
+
+      def precedence_lte?( op1, op2 )
+        @precedence[op1] <= @precedence[op2]
+      end
+
+      def push_op( op )
+        # Possible special case implied DEFAULT_OP in front of :not
+        # FIXME: Guard against DEFAULT_OP being set to not
+        if op == :not && !@has_op
+          push_op( @default_op )
+        end
+        loop do
+          last = @ops.last
+          if last && precedence_lte?( op, last )
+            @ops.pop
+            op_to_node( last )
+            dump 'PL'
+          else
+            break
+          end
+        end
+        @ops << op
+        @has_op = true
+        dump 'PO'
+      end
+
+      def flush_tree
+        while( last = @ops.pop )
+          op_to_node( last )
+          dump 'FO'
+        end
+        @node
+      end
+
+      def pop_term
+        @node.pop if @node.length > 1
+      end
+
+      def op_to_node( op )
+        o1 = pop_term
+        if o1
+          if op == :not
+            @node << [ :not, o1 ]
+          else
+            o0 = pop_term
+            if o0
+              if @node[0] == op
+                @node << o0 << o1
+              else
+                @node << [ op, o0, o1 ]
+              end
+            else
+              if @node[0] == op
+                @node << o1
+              else
+                @node = [ op, @node, o1 ]
+              end
+            end
+          end
+        else
+          log "No argument to #{op.inspect}, ignoring"
+        end
+      end
+    end
+
   end
 
 end
 
 require 'minitest/autorun'
 
-class TestingQueryParser < QueryParser
-  VERBOSE = ARGV.include?( '--verbose' )
+class TestingQueryParser < HumanFT::QueryParser
+  def initialize()
+    super
+    @verbose = ARGV.include?( '--verbose' )
+  end
 end
 
 class QueryParserTest < Minitest::Test
-  TC = TestingQueryParser
+  TC = TestingQueryParser.new
 
   def test_norm_pre_split
     assert_equal( '-',      TC.norm_pre_split( '-' ) )

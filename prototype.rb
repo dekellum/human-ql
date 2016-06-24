@@ -5,15 +5,15 @@
 # a OR b, a|b -> a | b   --> [ :or, a, b ]
 # a AND B, a&B --> a & B --> [ :and, a, b ]
 # a AND ( B OR C )       --> [ :and, a, [ :or, B, C ] ]
-# PREFIX:token           --> [ PREFIX, token ]
+# SCOPE:token            --> [ SCOPE, token ]
 # NOT C, -C -> '- C'     --> [ :not, C ]
 # ALSO '-(A|B)'          --> [ :not, [ :or, A, B] ]
 # ALSO '-"a b"'          --> [ :not, [ :phrase, a b ] ]
 #
-# FIXME, Might add: PREFIX:( parenthetical... ) and PREFIX:"a phrase"
+# FIXME, Might add: SCOPE:( parenthetical... ) and SCOPE:"a phrase"
 #
 # FIXME: Additional special characters to be filtered out:
-# ":" when not matching a prefix, replace with space
+# ":" when not matching a scope, replace with space
 # "*" to_tsquery significant
 #
 # FIXME: Add support for disabling certain diabolic expressions like
@@ -53,7 +53,7 @@ module HumanFT
     AND_TOKEN = /\A(AND|\&)\z/i.freeze
     NOT_TOKEN = /\A(NOT|\-)\z/i.freeze
 
-    PREFIX = /\A(FOO|BAR):(.+)/.freeze
+    SCOPE = /\A(FOO|BAR):(.+)/.freeze
 
     LQUOTE = '"'.freeze
     RQUOTE = '"'.freeze
@@ -64,7 +64,7 @@ module HumanFT
     PREFIX_TOKEN = /(?<=\A|#{SP})-(?=#{NSP})/.freeze
 
     private_constant :PRECEDENCE, :OR_TOKEN, :AND_TOKEN, :NOT_TOKEN,
-                     :PREFIX, :LQUOTE, :RQUOTE, :LPAREN, :RPAREN
+                     :SCOPE, :LQUOTE, :RQUOTE, :LPAREN, :RPAREN
                      #:SP, :NSP, :SPACES
 
     attr_reader :default_op, :precedence, :verbose
@@ -76,7 +76,7 @@ module HumanFT
       @or_token  =  OR_TOKEN
       @and_token = AND_TOKEN
       @not_token = NOT_TOKEN
-      @prefix = PREFIX
+      @scope = SCOPE
       @lquote = LQUOTE
       @rquote = RQUOTE
       @lparen = LPAREN
@@ -121,7 +121,7 @@ module HumanFT
         #ignore
         when @rparen
         #ignore
-        when @prefix
+        when @scope
           s.push_term( [ $1, $2 ] )
         when @or_token
           s.push_op( :or )

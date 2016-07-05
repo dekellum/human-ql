@@ -1,0 +1,35 @@
+PATH
+  remote: .
+  specs:
+    human-ql (1.0.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    json (1.8.3)
+    json (1.8.3-java)
+    minitest (5.8.4)
+    rake (11.2.2)
+    rdoc (4.0.1)
+      json (~> 1.4)
+    rjack-maven (3.0.5.0-java)
+    rjack-tarpit (2.1.1)
+      rake (>= 0.9.2.2, < 12)
+      rdoc (>= 3.12, < 5)
+    rjack-tarpit (2.1.1-java)
+      rake (>= 0.9.2.2, < 12)
+      rdoc (>= 3.12, < 5)
+      rjack-maven (~> 3.0.4)
+
+PLATFORMS
+  java
+  ruby
+
+DEPENDENCIES
+  human-ql!
+  minitest (~> 5.8.4)
+  rdoc (~> 4.0.1)
+  rjack-tarpit (~> 2.1)
+
+BUNDLED WITH
+   1.12.5

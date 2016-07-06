@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 #--
 # Copyright (c) 2016 David Kellum
 #
@@ -14,7 +16,7 @@
 # permissions and limitations under the License.
 #++
 
-require 'minitest/autorun'
+require_relative 'setup.rb'
 
 require 'human-ql/query_parser'
 

@@ -46,14 +46,11 @@ module HumanQL
     # FIXME: Additional special characters to be filtered out:
     # ":" when not matching a scope, replace with space
     # "*" to_tsquery significant
+    # "!" (Used by Postgresql as not)
     #
-    # FIXME: Add support for disabling certain diabolic expressions like
-    # top level not or not in top-level or branch, i.e.: "-rare" or "foo|-bar"
-    #
-    # Via https://www.postgresql.org/docs/9.5/static/datatype-textsearch.html
-    #
-    # In the absence of parentheses, ! (NOT) binds most tightly, and &
-    # (AND) binds more tightly than | (OR).
+    # FIXME: Add support for disabling certain diabolic expressions
+    # like top level not, or a not in top-level :or branch, i.e.:
+    # "-rare" or "foo|-bar"
     #
     #++
 

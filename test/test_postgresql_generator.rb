@@ -25,21 +25,41 @@ class TestPostgresqlGenerator < Minitest::Test
   TC = HumanQL::QueryParser.new
   PG = HumanQL::PostgreSQLGenerator.new
 
+  DB = if defined?( ::Sequel )
+         Sequel.connect( "postgres://localhost/human_ql_test" )
+       end
+
   def assert_gen( expected_pg, hq )
     ast = TC.parse( hq )
-    assert_equal( expected_pg, PG.generate( ast ), ast )
+    pg = PG.generate( ast )
+    assert_equal( expected_pg, pg, ast )
+  end
+
+  # Assert that the round-trip representation via PG
+  # to_tsquery(generated) (and back to text) doesn't error and is as
+  # expected.
+  def assert_tsq( expected, hq )
+    if DB
+      ast = TC.parse( hq )
+      pg = PG.generate( ast )
+      rt = DB["select to_tsquery(?) as tsquery", pg].first[:tsquery]
+      assert_equal( expected, rt, ast )
+    end
   end
 
   def test_gen_term
-    assert_gen( 'dog', 'dog' )
+    assert_gen( 'ape', 'ape' )
+    assert_tsq( "'ape'", 'ape' )
   end
 
   def test_gen_and
-    assert_gen( 'dog & boy', 'dog boy' )
+    assert_gen( 'ape & boy', 'ape boy' )
+    assert_tsq( "'ape' & 'boy'", 'ape boy' )
   end
 
   def test_gen_phrase
-    assert_gen( 'dog <-> boy', '"dog boy"' )
+    assert_gen( 'ape <-> boy', '"ape boy"' )
+    assert_tsq( "'ape' <-> 'boy'", '"ape boy"' )
   end
 
   def test_gen_empty
@@ -47,39 +67,48 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_gen_not
-    assert_gen( '!dog', '-dog' )
+    assert_gen( '!ape', '-ape' )
+    assert_tsq( "!'ape'", '-ape' )
   end
 
   def test_gen_or
-    assert_gen( '(dog | boy)', 'dog|boy' )
+    assert_gen( '(ape | boy)', 'ape|boy' )
+    assert_tsq( "'ape' | 'boy'", 'ape|boy' )
   end
 
   def test_gen_not_phrase
-    assert_gen( '!(dog <-> boy)', '-"dog boy"' )
+    assert_gen( '!(ape <-> boy)', '-"ape boy"' )
+    assert_tsq( "!( 'ape' <-> 'boy' )", '-"ape boy"' )
   end
 
   def test_gen_precedence_1
-    assert_gen( '(dog | boy) & cat', 'dog | boy cat' )
+    assert_gen( '(ape | boy) & cat', 'ape | boy cat' )
+    assert_tsq( "( 'ape' | 'boy' ) & 'cat'", 'ape | boy cat' )
   end
 
   def test_gen_precedence_2
-    assert_gen( 'dog & (boy | cat)', 'dog boy | cat' )
+    assert_gen( 'ape & (boy | cat)', 'ape boy | cat' )
+    assert_tsq( "'ape' & ( 'boy' | 'cat' )", 'ape boy | cat' )
   end
 
   def test_gen_precedence_3
-    assert_gen( '(dog | !boy) & cat', 'dog | - boy cat' )
+    assert_gen( '(ape | !boy) & cat', 'ape | - boy cat' )
+    assert_tsq( "( 'ape' | !'boy' ) & 'cat'", 'ape | - boy cat' )
   end
 
   def test_gen_precedence_4
-    assert_gen( '(!dog | boy) & cat', '-dog | boy cat' )
+    assert_gen( '(!ape | boy) & cat', '-ape | boy cat' )
+    assert_tsq( "( !'ape' | 'boy' ) & 'cat'", '-ape | boy cat' )
   end
 
   def test_gen_precedence_5
-    assert_gen( '(dog | boy) & !cat', 'dog | boy -cat' )
+    assert_gen( '(ape | boy) & !cat', 'ape | boy -cat' )
+    assert_tsq( "( 'ape' | 'boy' ) & !'cat'", 'ape | boy -cat' )
   end
 
   def test_gen_precedence_6
-    assert_gen( '(dog | boy) & !cat & d', 'dog | boy -cat d' )
+    assert_gen( '(ape | boy) & !cat & dog', 'ape | boy -cat dog' )
+    assert_tsq( "( 'ape' | 'boy' ) & !'cat' & 'dog'", 'ape | boy -cat dog' )
   end
 
 end

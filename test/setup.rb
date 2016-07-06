@@ -17,3 +17,8 @@
 require 'rubygems'
 require 'bundler/setup'
 require 'minitest/autorun'
+
+unless RUBY_PLATFORM =~ /java/
+  require 'pg'
+  require 'sequel'
+end

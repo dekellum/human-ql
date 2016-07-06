@@ -9,6 +9,7 @@ GEM
     json (1.8.3)
     json (1.8.3-java)
     minitest (5.8.4)
+    pg (0.18.4)
     rake (11.2.2)
     rdoc (4.0.1)
       json (~> 1.4)
@@ -20,6 +21,10 @@ GEM
       rake (>= 0.9.2.2, < 12)
       rdoc (>= 3.12, < 5)
       rjack-maven (~> 3.0.4)
+    sequel (4.36.0)
+    sequel_pg (1.6.17)
+      pg (>= 0.8.0)
+      sequel (>= 4.0.0)
 
 PLATFORMS
   java
@@ -28,8 +33,11 @@ PLATFORMS
 DEPENDENCIES
   human-ql!
   minitest (~> 5.8.4)
+  pg (~> 0.18.1)
   rdoc (~> 4.0.1)
   rjack-tarpit (~> 2.1)
+  sequel (~> 4.36)
+  sequel_pg (~> 1.6.11)
 
 BUNDLED WITH
    1.12.5

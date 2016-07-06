@@ -14,43 +14,48 @@
 # permissions and limitations under the License.
 #++
 
-# Supported syntax:
-# "a b c" --> " a b c "  --> [ :phrase, a, b, c ]
-# a b c (default :and)   --> [ :and, a, b, c ]
-# a OR b, a|b -> a | b   --> [ :or, a, b ]
-# a AND B, a&B --> a & B --> [ :and, a, b ]
-# a AND ( B OR C )       --> [ :and, a, [ :or, B, C ] ]
-# SCOPE:token            --> [ SCOPE, token ]
-# NOT C, -C -> '- C'     --> [ :not, C ]
-# ALSO '-(A|B)'          --> [ :not, [ :or, A, B] ]
-# ALSO '-"a b"'          --> [ :not, [ :phrase, a b ] ]
-#
-# FIXME, Might add: SCOPE:( parenthetical... ) and SCOPE:"a phrase"
-#
-# FIXME: Additional special characters to be filtered out:
-# ":" when not matching a scope, replace with space
-# "*" to_tsquery significant
-#
-# FIXME: Add support for disabling certain diabolic expressions like
-# top level not or not in top-level or branch, i.e.: "-rare" or "foo|-bar"
-#
-# Via https://www.postgresql.org/docs/9.5/static/datatype-textsearch.html
-#
-# In the absence of parentheses, ! (NOT) binds most tightly, and &
-# (AND) binds more tightly than | (OR).
-#
-# This adapts the infix precedence handling and operator stack of the
-# {Shunting Yard Algorithm}[https://en.wikipedia.org/wiki/Shunting-yard_algorithm]
-# originally described by Edsger Dijkstra.
-#
-# This class serves as a container of various contants. These are
-# always referenced internally via `self::` so that they may be
-# overridden with matching named contants in a derived class.
-# The token matching constants are matched via `===` so that either
-# Regexp or String values may be set.
 module HumanQL
 
+  # Human language, lenient query parser
+  #
+  # This adapts the infix precedence handling and operator stack of the
+  # {Shunting Yard Algorithm}[https://en.wikipedia.org/wiki/Shunting-yard_algorithm]
+  # originally described by Edsger Dijkstra.
+  #
+  # This class serves as a container of various contants. These are
+  # always referenced internally via `self::` so that they may be
+  # overridden with matching named contants in a derived class.
+  # The token matching constants are matched via `===` so that either
+  # Regexp or String values may be set.
   class QueryParser
+
+    #--
+    # Supported syntax:
+    # "a b c" --> " a b c "  --> [ :phrase, a, b, c ]
+    # a b c (default :and)   --> [ :and, a, b, c ]
+    # a OR b, a|b -> a | b   --> [ :or, a, b ]
+    # a AND B, a&B --> a & B --> [ :and, a, b ]
+    # a AND ( B OR C )       --> [ :and, a, [ :or, B, C ] ]
+    # SCOPE:token            --> [ SCOPE, token ]
+    # NOT C, -C -> '- C'     --> [ :not, C ]
+    # ALSO '-(A|B)'          --> [ :not, [ :or, A, B] ]
+    # ALSO '-"a b"'          --> [ :not, [ :phrase, a b ] ]
+    #
+    # FIXME, Might add: SCOPE:( parenthetical... ) and SCOPE:"a phrase"
+    #
+    # FIXME: Additional special characters to be filtered out:
+    # ":" when not matching a scope, replace with space
+    # "*" to_tsquery significant
+    #
+    # FIXME: Add support for disabling certain diabolic expressions like
+    # top level not or not in top-level or branch, i.e.: "-rare" or "foo|-bar"
+    #
+    # Via https://www.postgresql.org/docs/9.5/static/datatype-textsearch.html
+    #
+    # In the absence of parentheses, ! (NOT) binds most tightly, and &
+    # (AND) binds more tightly than | (OR).
+    #
+    #++
 
     SP  = "[[:space:]]".freeze
     NSP = "[^#{SP}]".freeze
@@ -68,7 +73,7 @@ module HumanQL
     AND_TOKEN = /\A(AND|\&)\z/i.freeze
     NOT_TOKEN = /\A(NOT|\-)\z/i.freeze
 
-    SCOPE = /\A(FOO|BAR):(.+)/.freeze
+    SCOPE = /\A(FOO|BAR):(.+)/.freeze #FIXME
 
     LQUOTE = '"'.freeze
     RQUOTE = '"'.freeze

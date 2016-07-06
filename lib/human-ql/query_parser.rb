@@ -176,7 +176,7 @@ module HumanQL
         if ( op == :and || op == :or ) && out.length < 2
           out[0]
         else
-          [ op, *out ]
+          out.unshift( op )
         end
       end
     end

@@ -71,9 +71,19 @@ class TestPostgresqlGenerator < Minitest::Test
     assert_tsq( "!'ape'", '-ape' )
   end
 
+  def test_gen_not_stop
+    assert_gen( '!the', '-the' )
+    assert_tsq( "", '-the' )
+  end
+
   def test_gen_or
     assert_gen( '(ape | boy)', 'ape|boy' )
     assert_tsq( "'ape' | 'boy'", 'ape|boy' )
+  end
+
+  def test_gen_or_stop
+    assert_gen( '(the | boy)', 'the|boy' )
+    assert_tsq( "'boy'", 'the|boy' )
   end
 
   def test_gen_not_phrase

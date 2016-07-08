@@ -27,9 +27,7 @@ class TestPostgresqlFuzz < Minitest::Test
 
   DB = Sequel.connect( "postgres://localhost/human_ql_test" )
 
-  # Assert that the round-trip representation via PG
-  # to_tsquery(generated) oesn't error and is as
-  # expected.
+  # Assert that parsing via PG to_tsquery(generated) doesn't fail
   def assert_pg_parse( hq )
     ast = TC.parse( hq )
     if ast
@@ -38,7 +36,7 @@ class TestPostgresqlFuzz < Minitest::Test
         rt = DB["select to_tsquery(?) as tsquery", pg].first[:tsquery]
         refute_nil( rt, hq )
       rescue Sequel::DatabaseError => e
-        fail( "On query #{hq.inspect} : #{ e.to_s }" )
+        fail( "On query #{hq.inspect} -> #{ast.inspect}: #{ e.to_s }" )
       end
     end
   end
@@ -47,7 +45,7 @@ class TestPostgresqlFuzz < Minitest::Test
   GENERIC_Q = 'ape | ( boy -cat dog )'.freeze
 
   # Characters which are likely to cause trouble
-  RANDOM_C = '((({"xyz" **!: ,^# http:///--0.123.467890-})))'.freeze
+  RANDOM_C = '({"\'a !:* ,^#:/-0.123e-9)'.freeze
 
   def test_fuzz
     1000.times do
@@ -56,7 +54,7 @@ class TestPostgresqlFuzz < Minitest::Test
       q = GENERIC_Q[s,l]
       20.times do
         if rand(3) == 1
-          q[rand(q.length)] = fuzz
+          q[rand(q.length+1)] = fuzz
         end
       end
       assert_pg_parse( q )

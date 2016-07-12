@@ -21,8 +21,25 @@ require_relative 'setup.rb'
 require 'human-ql/query_parser'
 require 'human-ql/postgresql_generator'
 
+class TestFuzzParser < HumanQL::QueryParser
+  def initialize
+    super
+    @verbose = ARGV.include?( '--verbose' )
+
+    @spaces = /[[:space:]*:!'<>]+/.freeze
+    # FIXME: Gets us further, but adding ':' to spaces will disable
+    # SCOPEs. Need to make ':' more like an operator.
+
+    @phrase_token_rejects = /\A[()|&]\z/.freeze
+  end
+
+  def norm_phrase_tokens( tokens )
+    tokens.reject { |t| @phrase_token_rejects === t }
+  end
+end
+
 class TestPostgresqlFuzz < Minitest::Test
-  TC = HumanQL::QueryParser.new
+  TC = TestFuzzParser.new
   PG = HumanQL::PostgreSQLGenerator.new
 
   DB = Sequel.connect( "postgres://localhost/human_ql_test" )
@@ -48,7 +65,7 @@ class TestPostgresqlFuzz < Minitest::Test
   RANDOM_C = '({"\'a !:* ,^#:/-0.123e-9)'.freeze
 
   def test_fuzz
-    1000.times do
+    10000.times do
       s = rand( GENERIC_Q.length )
       l = rand( GENERIC_Q.length * 2 )
       q = GENERIC_Q[s,l]
@@ -64,6 +81,5 @@ class TestPostgresqlFuzz < Minitest::Test
   def fuzz
     RANDOM_C[rand(RANDOM_C.length)]
   end
-
 
 end if defined?( ::Sequel )

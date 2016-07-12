@@ -121,4 +121,13 @@ class TestPostgresqlGenerator < Minitest::Test
     assert_tsq( "( 'ape' | 'boy' ) & !'cat' & 'dog'", 'ape | boy -cat dog' )
   end
 
+  def test_funk_1
+    assert_tsq( "!'y' & 'c3'", "|-( ,'y -)c3" )
+  end
+
+  def test_funk_2_crasher
+    skip "Results in SEGFAULT on PG 9.6beta1 and beta2"
+    assert_tsq( "!( !'b' ) & 'c'", "-(a -b) & c" )
+  end
+
 end

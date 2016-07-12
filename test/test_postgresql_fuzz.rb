@@ -59,10 +59,10 @@ class TestPostgresqlFuzz < Minitest::Test
   end
 
   # Starting point query
-  GENERIC_Q = 'ape | ( boy -cat dog )'.freeze
+  GENERIC_Q = 'ape | ( boy -"cat dog" )'.freeze
 
   # Characters which are likely to cause trouble
-  RANDOM_C = '({"\'a !:* ,^#:/-0.123e-9)'.freeze
+  RANDOM_C = '({"\'a !:* ,^#:/-0.123e-9)<>'.freeze
 
   def test_fuzz
     10000.times do

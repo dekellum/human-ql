@@ -125,7 +125,7 @@ module HumanQL
         when @lquote
           rqi = tokens.index { |tt| @rquote === tt }
           if rqi
-            s.push_term( [ :phrase, *tokens[0...rqi] ] )
+            s.push_term( [ :phrase, *norm_phrase_tokens(tokens[0...rqi]) ] )
             tokens = tokens[rqi+1..-1]
           end # else ignore
         when @lparen
@@ -201,6 +201,10 @@ module HumanQL
       q = norm_prefix( q )
       q = norm_space( q )
       q unless q.empty?
+    end
+
+    def norm_phrase_tokens( tokens )
+      tokens.reject { |t| @lparen === t || @rparen === t }
     end
 
     class ParseState

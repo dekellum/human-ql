@@ -158,7 +158,6 @@ module HumanQL
       if ! node.is_a?( Array )
         op
       elsif args.empty?
-        # FIXME: warn "WTF? 1 #{op.inspect}" unless op.is_a?( String )
         nil
       else
         out = []
@@ -172,6 +171,8 @@ module HumanQL
         end
         if ( op == :and || op == :or ) && out.length < 2
           out[0]
+        elsif out.empty?
+          nil
         else
           out.unshift( op )
         end

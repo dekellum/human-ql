@@ -21,7 +21,7 @@ require_relative 'setup.rb'
 require 'human-ql/query_parser'
 
 class TestingQueryParser < HumanQL::QueryParser
-  def initialize()
+  def initialize
     super
     @verbose = ARGV.include?( '--verbose' )
   end
@@ -212,6 +212,10 @@ class TestQueryParser < Minitest::Test
 
   def test_parse_precedence_6
     assert_parse( [ :and, [ :or, A, B ], [ :not, C ], D ], 'a | b -c d' )
+  end
+
+  def test_parse_empty_not
+    assert_parse( A, 'a -""' )
   end
 
 end

@@ -30,6 +30,7 @@ class TestPostgresqlFuzz < Minitest::Test
   # Assert that parsing via PG to_tsquery(generated) doesn't fail
   def assert_pg_parse( hq )
     ast = TC.parse( hq )
+    ast = PG.extra_norm( ast )
     if ast
       pg = PG.generate( ast )
       begin

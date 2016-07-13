@@ -32,6 +32,35 @@ module HumanQL
     NOT = '!'.freeze
     NEAR = ' <-> '.freeze
 
+    def extra_norm( node, allow_not = true )
+      op,*args = node
+      if ! node.is_a?( Array )
+        op
+      elsif args.empty?
+        nil
+      elsif op == :not && !allow_not
+        nil
+      else
+        a_not = allow_not && ( op == :and )
+        out = []
+        args.each do |a|
+          a = extra_norm( a, a_not )
+          if a.is_a?( Array ) && a[0] == op
+            out += a[1..-1]
+          elsif a # filter nil
+            out << a
+          end
+        end
+        if ( op == :and || op == :or ) && out.length < 2
+          out[0]
+        elsif out.empty?
+          nil
+        else
+          out.unshift( op )
+        end
+      end
+    end
+
     def generate( node )
       op,*args = node
       if ! node.is_a?( Array )

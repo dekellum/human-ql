@@ -261,6 +261,8 @@ module HumanQL
         @node = [ @default_op ]
         @ops = []
         @has_op = true
+        @index = 0
+        @last_term = -1
         log
       end
 
@@ -270,16 +272,19 @@ module HumanQL
 
       def dump( fr )
         if @verbose
-          log( "%2s ops: %-12s node: %-30s" %
-               [ fr, @ops.inspect, @node.inspect ] )
+          log( "%2d %2s ops: %-12s node: %-30s" %
+               [ @index, fr, @ops.inspect, @node.inspect ] )
         end
       end
 
       def push_term( t )
-        unless @has_op
+        if @has_op
+          @index += 1
+        else
           push_op( @default_op )
         end
         @node << t
+        @last_term = @index
         @has_op = false
         dump 'PT'
       end
@@ -293,29 +298,32 @@ module HumanQL
       end
 
       def push_op( op )
+        @index += 1
         # Possible special case implied DEFAULT_OP in front of :not
         # FIXME: Guard against DEFAULT_OP being set to not
         if unary?( op ) && !@has_op
           push_op( @default_op )
         end
         loop do
-          last = @ops.last
+          n, last = @ops.last
           if last && precedence_lte?( op, last )
             @ops.pop
-            op_to_node( last )
+            op_to_node( n, last )
             dump 'PL'
           else
             break
           end
         end
-        @ops << op
+        @ops << [ @index, op ]
         @has_op = true
         dump 'PO'
       end
 
       def flush_tree
-        while( last = @ops.pop )
-          op_to_node( last )
+        loop do
+          n, last = @ops.pop
+          break unless last
+          op_to_node( n, last )
           dump 'FO'
         end
         @node
@@ -325,7 +333,11 @@ module HumanQL
         @node.pop if @node.length > 1
       end
 
-      def op_to_node( op )
+      def op_to_node( opi, op )
+        if opi >= @last_term
+          log "Ignoring trailing #{op.inspect} (index #{opi})" if @verbose
+          return
+        end
         o1 = pop_term
         if o1
           if unary?( op )

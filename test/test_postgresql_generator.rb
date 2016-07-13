@@ -124,6 +124,7 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_funk_1
+    skip "Pending other fixes"
     assert_tsq( "!'y' & 'c3'", "|-( ,'y -)c3" )
   end
 

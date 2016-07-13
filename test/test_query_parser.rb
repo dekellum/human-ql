@@ -175,6 +175,14 @@ class TestQueryParser < Minitest::Test
     assert_parse( nil, '|-' )
   end
 
+  def test_late_noop_not
+    assert_parse( A, 'a -' )
+  end
+
+  def test_late_noop_or
+    assert_parse( [:and, A, B], 'a b |' )
+  end
+
   def test_parse_or_noop_1
     assert_parse( A, '|a' )
   end

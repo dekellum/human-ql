@@ -18,11 +18,11 @@
 
 require_relative 'setup.rb'
 
-require 'human-ql/query_parser'
+require 'human-ql/postgresql_custom_parser'
 require 'human-ql/postgresql_generator'
 
 class TestPostgresqlGenerator < Minitest::Test
-  TC = HumanQL::QueryParser.new
+  TC = HumanQL::PostgreSQLCustomParser.new( verbose: true )
   PG = HumanQL::PostgreSQLGenerator.new
 
   DB = if defined?( ::Sequel )

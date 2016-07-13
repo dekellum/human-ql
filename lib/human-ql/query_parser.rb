@@ -31,17 +31,13 @@ module HumanQL
 
     #--
     # Supported syntax:
-    # "a b c" --> " a b c "  --> [ :phrase, a, b, c ]
+    # "a b c"                --> [ :phrase, a, b, c ]
     # a b c (default :and)   --> [ :and, a, b, c ]
     # a OR b, a|b -> a | b   --> [ :or, a, b ]
     # a AND B, a&B --> a & B --> [ :and, a, b ]
     # a AND ( B OR C )       --> [ :and, a, [ :or, B, C ] ]
-    # SCOPE:token            --> [ SCOPE, token ]
-    # NOT C, -C -> '- C'     --> [ :not, C ]
-    # ALSO '-(A|B)'          --> [ :not, [ :or, A, B] ]
-    # ALSO '-"a b"'          --> [ :not, [ :phrase, a b ] ]
-    #
-    # FIXME, Might add: SCOPE:( parenthetical... ) and SCOPE:"a phrase"
+    # SCOPE: expr            --> [ 'SCOPE', expr ]
+    # NOT expr, -expr        --> [ :not, expr ]
     #
     # FIXME: Additional special characters to be filtered out:
     # ":" when not matching a scope, replace with space
@@ -51,17 +47,18 @@ module HumanQL
     # FIXME: Add support for disabling certain diabolic expressions
     # like top level not, or a not in top-level :or branch, i.e.:
     # "-rare" or "foo|-bar"
-    #
     #++
 
     SP  = "[[:space:]]".freeze
     NSP = "[^#{SP}]".freeze
     SPACES = /#{SP}+/.freeze
 
-    # Lookup Hash for the precedence of supported operators.  To limit
-    # user surprise, the DEFAULT_OP should be lowest.
-    PRECEDENCE = {
-      not: 3,
+    # Default precedence of supported operators.  To limit
+    # human surprise, the DEFAULT_OP should be lowest. The default
+    # precedence for unlisted operators (like scopes) is 10, thus :not
+    # should be set higher.
+    DEFAULT_PRECEDENCE = {
+      not: 11,
       or:  2,
       and: 1
     }.freeze
@@ -69,8 +66,6 @@ module HumanQL
     OR_TOKEN = /\A(OR|\|)\z/i.freeze
     AND_TOKEN = /\A(AND|\&)\z/i.freeze
     NOT_TOKEN = /\A(NOT|\-)\z/i.freeze
-
-    SCOPE = /\A(FOO|BAR):(.+)/.freeze #FIXME
 
     LQUOTE = '"'.freeze
     RQUOTE = '"'.freeze
@@ -80,20 +75,42 @@ module HumanQL
     INFIX_TOKEN = /[()|&"]/.freeze
     PREFIX_TOKEN = /(?<=\A|#{SP})-(?=#{NSP})/.freeze
 
-    private_constant :PRECEDENCE, :OR_TOKEN, :AND_TOKEN, :NOT_TOKEN,
-                     :SCOPE, :LQUOTE, :RQUOTE, :LPAREN, :RPAREN
+    private_constant :DEFAULT_PRECEDENCE, :OR_TOKEN, :AND_TOKEN, :NOT_TOKEN,
+                     :LQUOTE, :RQUOTE, :LPAREN, :RPAREN
                      #:SP, :NSP, :SPACES
 
     attr_reader :default_op, :precedence, :verbose
 
+    # Given a list of scope prefixes, generate the #scope and
+    # #scope_token regular expressions.
+    def gen_scope_regexes( *scopes, ignorecase: false )
+      if scopes.empty?
+        @scope = nil
+        @scope_token = nil
+      elsif scopes.length == 1 && !ignorecase
+        s = scopes.first
+        @scope = ( s + ':' ).freeze
+        @scope_token = /((?<=\A|#{SP})(#{s}))?#{SP}*:/.freeze
+      else
+        opts = ignorecase ? Regexp::IGNORECASE : nil
+        s = Regexp.union( *scopes ).source
+        @scope = Regexp.new( '(' + s + '):', opts ).freeze
+        @scope_token = Regexp.new( "((?<=\A|#{SP})(#{s}))?#{SP}*:", opts ).freeze
+      end
+      @scope_upcase = ignorecase
+    end
+
     def initialize( opts = {} )
       @default_op = :and
-      @precedence = PRECEDENCE
+
+      @precedence = Hash.new(10)
+      @precedence.merge!( DEFAULT_PRECEDENCE )
+      @precedence.freeze
+
       @spaces = SPACES
       @or_token  =  OR_TOKEN
       @and_token = AND_TOKEN
       @not_token = NOT_TOKEN
-      @scope = SCOPE
       @lquote = LQUOTE
       @rquote = RQUOTE
       @lparen = LPAREN
@@ -101,6 +118,9 @@ module HumanQL
       @verbose = false
       @infix_token = INFIX_TOKEN
       @prefix_token = PREFIX_TOKEN
+      @scope = nil
+      @scope_token = nil
+      @scope_upcase = false
 
       opts.each do |k,v|
         var = "@#{k}".to_sym
@@ -139,7 +159,7 @@ module HumanQL
         when @rparen
         #ignore
         when @scope
-          s.push_term( [ $1, $2 ] )
+          s.push_op( scope_op( t ) )
         when @or_token
           s.push_op( :or )
         when @and_token
@@ -151,6 +171,12 @@ module HumanQL
         end
       end
       s.flush_tree
+    end
+
+    def scope_op( token )
+      t = token[0...-1]
+      t.upcase! if @scope_upcase
+      t
     end
 
     def tree_norm( node )
@@ -188,7 +214,25 @@ module HumanQL
 
     # Split prefixes as seperate tokens
     def norm_prefix( q )
-      q.gsub( @prefix_token, '\0 ' )
+      if @prefix_token
+        q.gsub( @prefix_token, '\0 ' )
+      else
+        q
+      end
+    end
+
+    def norm_scope( q )
+      if @scope_token
+        q.gsub( @scope_token ) do
+          if $2
+            $2 + ': '
+          else
+            ' '
+          end
+        end
+      else
+        q
+      end
     end
 
     def norm_space( q )
@@ -198,6 +242,7 @@ module HumanQL
     def normalize( q )
       q ||= ''
       q = norm_infix( q )
+      q = norm_scope( q )
       q = norm_prefix( q )
       q = norm_space( q )
       q unless q.empty?
@@ -243,10 +288,14 @@ module HumanQL
         @precedence[op1] <= @precedence[op2]
       end
 
+      def unary?( op )
+        ( op == :not || op.is_a?( String ) )
+      end
+
       def push_op( op )
         # Possible special case implied DEFAULT_OP in front of :not
         # FIXME: Guard against DEFAULT_OP being set to not
-        if op == :not && !@has_op
+        if unary?( op ) && !@has_op
           push_op( @default_op )
         end
         loop do
@@ -279,8 +328,8 @@ module HumanQL
       def op_to_node( op )
         o1 = pop_term
         if o1
-          if op == :not
-            @node << [ :not, o1 ]
+          if unary?( op )
+            @node << [ op, o1 ]
           else
             o0 = pop_term
             if o0

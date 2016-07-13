@@ -24,6 +24,7 @@ class TestingQueryParser < HumanQL::QueryParser
   def initialize
     super
     @verbose = ARGV.include?( '--verbose' )
+    gen_scope_regexes( 'FOO' )
   end
 end
 
@@ -67,6 +68,30 @@ class TestQueryParser < Minitest::Test
     assert_equal( 'foo bar', TC.norm_space( " foo\t bar\r  " ) )
   end
 
+  def test_norm_scope
+    assert_equal( 'FOO: ', TC.norm_scope( 'FOO:' ) )
+    assert_equal( ' ', TC.norm_scope( ':' ) )
+    assert_equal( ' ', TC.norm_scope( ' :' ) )
+    assert_equal( ' after', TC.norm_scope( ':after' ) )
+    assert_equal( ' after', TC.norm_scope( ' :after' ) )
+
+    assert_equal( 'FOO: bar', TC.norm_scope( 'FOO:bar' ) )
+    assert_equal( 'FOO:  bar', TC.norm_scope( 'FOO: bar' ) )
+    assert_equal( 'FOO:  bar', TC.norm_scope( 'FOO : bar' ) )
+
+    assert_equal( ' FOO: bar', TC.norm_scope( ' FOO:bar' ) )
+    assert_equal( 'a FOO: bar', TC.norm_scope( 'a FOO:bar' ) )
+  end
+
+  def test_norm_scope_undefined
+    assert_equal( 'other  bar', TC.norm_scope( 'other : bar' ) )
+    assert_equal( 'other  bar', TC.norm_scope( 'other: bar' ) )
+    assert_equal( 'other bar', TC.norm_scope( 'other:bar' ) )
+
+    assert_equal( ' other  bar', TC.norm_scope( ' other: bar' ) )
+    assert_equal( 'a other  bar', TC.norm_scope( 'a other: bar' ) )
+  end
+
   def test_normalize
     assert_equal( nil, TC.normalize( nil ) )
     assert_equal( nil, TC.normalize( '' ) )
@@ -97,11 +122,23 @@ class TestQueryParser < Minitest::Test
   end
 
   def test_parse_basic_2
-    assert_parse( [ 'FOO', A ], 'FOO:a' )
+    assert_parse( [ :and, A, B ], 'a b' )
   end
 
-  def test_parse_basic_3
-    assert_parse( [ :and, A, B ], 'a b' )
+  def test_parse_scope_basic
+    assert_parse( [ 'FOO', A ], 'FOO:a' )
+    assert_parse( [ 'FOO', A ], 'FOO: a' )
+    assert_parse( [ 'FOO', A ], 'FOO : a' )
+  end
+
+  def test_parse_scope_complex
+    assert_parse( [ 'FOO', [ :phrase, A, B ] ], 'FOO:"a b"' )
+    assert_parse( [ 'FOO', [ :and, A, B ] ], 'FOO:(a b)' )
+    assert_parse( [ 'FOO', [ :or, A, B ] ], 'FOO:(a|b)' )
+  end
+
+  def test_parse_scope_not
+    assert_parse( [ 'FOO', [ :not, A ] ], 'FOO:-a' )
   end
 
   def test_parse_phrase

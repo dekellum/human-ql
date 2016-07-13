@@ -22,7 +22,7 @@ require 'human-ql/postgresql_custom_parser'
 require 'human-ql/postgresql_generator'
 
 class TestPostgresqlGenerator < Minitest::Test
-  TC = HumanQL::PostgreSQLCustomParser.new( verbose: true )
+  TC = HumanQL::PostgreSQLCustomParser.new
   PG = HumanQL::PostgreSQLGenerator.new
 
   DB = if defined?( ::Sequel )
@@ -31,6 +31,7 @@ class TestPostgresqlGenerator < Minitest::Test
 
   def assert_gen( expected_pg, hq )
     ast = TC.parse( hq )
+    ast = PG.extra_norm( ast )
     pg = PG.generate( ast )
     assert_equal( expected_pg, pg, ast )
   end
@@ -41,6 +42,7 @@ class TestPostgresqlGenerator < Minitest::Test
   def assert_tsq( expected, hq )
     if DB
       ast = TC.parse( hq )
+      ast = PG.extra_norm( ast )
       pg = PG.generate( ast )
       rt = DB["select to_tsquery(?) as tsquery", pg].first[:tsquery]
       assert_equal( expected, rt, ast )
@@ -102,13 +104,13 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_gen_precedence_3
-    assert_gen( '(ape | !boy) & cat', 'ape | - boy cat' )
-    assert_tsq( "( 'ape' | !'boy' ) & 'cat'", 'ape | - boy cat' )
+    assert_gen( 'ape & cat', 'ape | - boy cat' )
+    assert_tsq( "'ape' & 'cat'", 'ape | - boy cat' )
   end
 
   def test_gen_precedence_4
-    assert_gen( '(!ape | boy) & cat', '-ape | boy cat' )
-    assert_tsq( "( !'ape' | 'boy' ) & 'cat'", '-ape | boy cat' )
+    assert_gen( 'boy & cat', '-ape | boy cat' )
+    assert_tsq( "'boy' & 'cat'", '-ape | boy cat' )
   end
 
   def test_gen_precedence_5

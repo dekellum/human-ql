@@ -207,6 +207,12 @@ class TestQueryParser < Minitest::Test
     assert_parse( nil, '()' )
   end
 
+  def test_parse_adj_parens
+    assert_parse( [:and, A, B], '(a)b' )
+    assert_parse( [:and, [:not, 'a-' ], B], '-(a-)b' )
+    assert_parse( [:and, [:not, A], B], '-(a)b' )
+  end
+
   def test_parse_parens_0
     assert_parse( A, '(a)' )
   end

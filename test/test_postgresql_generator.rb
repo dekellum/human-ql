@@ -124,13 +124,18 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_funk_1
-    skip "Pending other fixes"
+    skip "Pending other fixes (leading or)"
+    assert_gen( "!(, & y)", "-( ,'y -)" )
+    assert_tsq( "!'y'",     "-( ,'y -)" )
+
+    assert_gen( "!(, & y) & c3", "|-( ,'y -)c3" )
     assert_tsq( "!'y' & 'c3'", "|-( ,'y -)c3" )
   end
 
-  def test_funk_2_crasher
-    skip "Results in SEGFAULT on PG 9.6beta1 and beta2"
-    assert_tsq( "!( !'b' ) & 'c'", "-(a -b) & c" )
+  def test_funk_2
+    # Note, double not with stopword would crash PG 9.6 beta1-2
+    # without extra_norm filtering
+    assert_tsq( "'cat'", "-(a -boy) & cat" )
   end
 
 end

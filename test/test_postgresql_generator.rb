@@ -124,7 +124,6 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_funk_1
-    skip "Pending other fixes (leading or)"
     assert_gen( "!(, & y)", "-( ,'y -)" )
     assert_tsq( "!'y'",     "-( ,'y -)" )
 

@@ -301,8 +301,11 @@ module HumanQL
         @index += 1
         # Possible special case implied DEFAULT_OP in front of :not
         # FIXME: Guard against DEFAULT_OP being set to not
-        if unary?( op ) && !@has_op
-          push_op( @default_op )
+        if unary?( op )
+          push_op( @default_op ) unless @has_op
+        elsif @node.length < 2 # no proceeding term
+          log "Ignoring leading #{op.inspect} (index #{@index})" if @verbose
+          return
         end
         loop do
           n, last = @ops.last

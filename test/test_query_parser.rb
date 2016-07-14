@@ -237,6 +237,15 @@ class TestQueryParser < Minitest::Test
     assert_parse( [ :and, D, [ :or, A, B, C ] ], 'd (a|b|c)' )
   end
 
+  def test_parse_parens_5
+    assert_parse( [ :and, [ :or, A, B ], [ :or, C, D ] ], '(a|b) (c|d)' )
+    assert_parse( [ :and, [ :or, A, B ], [ :or, C, D ] ], '((a|b) (c|d))' )
+  end
+
+  def test_parse_parens_6
+    assert_parse( [ :or, [ :and, A, B ], [ :and, C, D ] ], '((a&b) | (c&d))' )
+  end
+
   def test_parse_precedence_1
     assert_parse( [ :and, [ :or, A, B ], C ], 'a | b c' )
   end

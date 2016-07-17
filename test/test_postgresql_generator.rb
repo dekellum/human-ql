@@ -132,7 +132,7 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_funk_2
-    # Note, double not with stopword would crash PG 9.6 beta1-2
+    # Note, double :not with stopword would crash PG 9.6 beta1-2
     # without extra_norm filtering
     assert_tsq( "'cat'", "-(a -boy) & cat" )
   end

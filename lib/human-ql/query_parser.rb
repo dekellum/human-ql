@@ -149,7 +149,7 @@ module HumanQL
             tokens = tokens[rqi+1..-1]
           end # else ignore
         when @lparen
-          rpi = tokens.rindex { |tt| @rparen === tt } #last
+          rpi = rparen_index( tokens )
           if rpi
             s.push_term( parse_tree( tokens[0...rpi] ) )
             tokens = tokens[rpi+1..-1]
@@ -177,6 +177,26 @@ module HumanQL
       t = token[0...-1]
       t.upcase! if @scope_upcase
       t
+    end
+
+    def rparen_index( tokens )
+      li = 1
+      phrase = false
+      tokens.index do |tt|
+        if phrase
+          phrase = false if @rquote === tt
+        else
+          case tt
+          when @rparen
+            li -= 1
+          when @lparen
+            li += 1
+          when @lquote
+            phrase = true
+          end
+        end
+        (li == 0)
+      end
     end
 
     def tree_norm( node )

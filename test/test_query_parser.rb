@@ -104,6 +104,7 @@ class TestQueryParser < Minitest::Test
   B = 'b'
   C = 'c'
   D = 'd'
+  E = 'e'
 
   def test_tree_norm_1
     assert_equal( A, TC.tree_norm( [:or, [:and], A ] ) )
@@ -244,6 +245,19 @@ class TestQueryParser < Minitest::Test
 
   def test_parse_parens_6
     assert_parse( [ :or, [ :and, A, B ], [ :and, C, D ] ], '((a&b) | (c&d))' )
+    assert_parse( [ :or, [ :and, A, B ], [ :not, [ :and, C, D ] ] ],
+                  '((a&b) | -(c&d))' )
+    assert_parse( [ :or, [ :not, [ :and, A, B ] ], [ :and, C, D ], E ],
+                  '(-(a&b) | (c&d) | e )' )
+  end
+
+  def test_parens_and_quotes
+    assert_parse( [:phrase, 'a' ], '"(a)"' )
+    assert_parse( [ :or, [ :and, A, B ], [ :and, C, D ] ], '((a&b) |"(c&d))' )
+    assert_parse( [ :or, [ :and, A, B ], [ :and, C, D ] ], '((a&b) |(c&d)")' )
+    assert_parse( [ :and, [ :or, [ :and, A, B ], C ], D ], '((a&b) |(c&"d))' )
+    assert_parse( [ :or, [ :and, A, B ], [ :and, [:phrase, C], D ] ],
+                  '((a&b) |("c))"&d))' )
   end
 
   def test_parse_precedence_1

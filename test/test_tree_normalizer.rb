@@ -86,7 +86,7 @@ class TestTreeNormalizer < Minitest::Test
   end
 
   def test_unconstrained_not_thwart
-    skip( "Need new test for this case" )
+    skip( "Need new normalization check for this case" )
     assert_norm( UN, nil, [:and, [:not, A ], [:not, A ] ] )
   end
 

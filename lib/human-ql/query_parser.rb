@@ -43,10 +43,6 @@ module HumanQL
     # ":" when not matching a scope, replace with space
     # "*" to_tsquery significant
     # "!" (Used by Postgresql as not)
-    #
-    # FIXME: Add support for disabling certain diabolic expressions
-    # like top level not, or a not in top-level :or branch, i.e.:
-    # "-rare" or "foo|-bar"
     #++
 
     SP  = "[[:space:]]".freeze

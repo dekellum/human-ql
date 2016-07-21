@@ -135,7 +135,7 @@ module HumanQL
     def parse( q )
       q = normalize( q )
       tokens = q ? q.split(' ') : []
-      tree_norm( parse_tree( tokens ) )
+      parse_tree( tokens )
     end
 
     def parse_tree( tokens )
@@ -196,32 +196,6 @@ module HumanQL
           end
         end
         (li == 0)
-      end
-    end
-
-    def tree_norm( node )
-      op,*args = node
-      if ! node.is_a?( Array )
-        op
-      elsif args.empty?
-        nil
-      else
-        out = []
-        args.each do |a|
-          a = tree_norm( a )
-          if a.is_a?( Array ) && a[0] == op
-            out += a[1..-1]
-          elsif a # filter nil
-            out << a
-          end
-        end
-        if ( op == :and || op == :or ) && out.length < 2
-          out[0]
-        elsif out.empty?
-          nil
-        else
-          out.unshift( op )
-        end
       end
     end
 

@@ -20,9 +20,11 @@ require_relative 'setup.rb'
 
 require 'human-ql/postgresql_custom_parser'
 require 'human-ql/postgresql_generator'
+require 'human-ql/tree_normalizer'
 
 class TestPostgresqlFuzz < Minitest::Test
   TC = HumanQL::PostgreSQLCustomParser.new
+  DN = HumanQL::TreeNormalizer.new
   PG = HumanQL::PostgreSQLGenerator.new
 
   DB = Sequel.connect( "postgres://localhost/human_ql_test" )
@@ -30,7 +32,7 @@ class TestPostgresqlFuzz < Minitest::Test
   # Assert that parsing via PG to_tsquery(generated) doesn't fail
   def assert_pg_parse( hq )
     ast = TC.parse( hq )
-    ast = PG.extra_norm( ast )
+    ast = DN.normalize( ast )
     if ast
       pg = PG.generate( ast )
       begin

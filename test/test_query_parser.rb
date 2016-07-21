@@ -19,6 +19,7 @@
 require_relative 'setup.rb'
 
 require 'human-ql/query_parser'
+require 'human-ql/tree_normalizer'
 
 class TestingQueryParser < HumanQL::QueryParser
   def initialize
@@ -30,6 +31,7 @@ end
 
 class TestQueryParser < Minitest::Test
   TC = TestingQueryParser.new
+  DN = HumanQL::TreeNormalizer.new
 
   def test_norm_prefix
     assert_equal( '-',      TC.norm_prefix( '-' ) )
@@ -106,16 +108,10 @@ class TestQueryParser < Minitest::Test
   D = 'd'
   E = 'e'
 
-  def test_tree_norm_1
-    assert_equal( A, TC.tree_norm( [:or, [:and], A ] ) )
-  end
-
-  def test_tree_norm_2
-    assert_equal( [:and, A, B ], TC.tree_norm( [:and, [:and, A, B ] ] ) )
-  end
-
   def assert_parse( expected_tree, input )
-    assert_equal( expected_tree, TC.parse( input ), input )
+    out = TC.parse( input )
+    out = DN.normalize( out )
+    assert_equal( expected_tree, out, input )
   end
 
   def test_parse_basic_1

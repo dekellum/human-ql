@@ -79,6 +79,22 @@ class TestTreeNormalizer < Minitest::Test
     assert_norm( DN, [ S2, [ :and, A, B ] ], [ S2, [ :and, A, [ S2, B ] ] ] )
   end
 
+  def test_scope_not
+    assert_norm( DN, [ S1, [ :not, A ] ], [ S1, [ :not, A ] ] )
+  end
+
+  def test_not_scope
+    assert_norm( DN, [ :not, [ S1, A ] ], [ :not, [ S1, A ] ] )
+  end
+
+  def test_unconstrained_scope_not
+    assert_norm( UN, nil, [ S1, [ :not, A ] ] )
+  end
+
+  def test_unconstrained_not_scope
+    assert_norm( UN, nil, [ :not, [ S1, A ] ] )
+  end
+
   def test_unconstrained_not
     assert_norm( UN, nil, [:not, A ] )
     assert_norm( UN, [:and, [:not, A ], B ], [:and, [:not, A ], B ] )

@@ -25,6 +25,7 @@ module HumanQL
       @nested_not = false
       @unconstrained_not = true
       @scope_can_constrain = true
+      @not_scope = :invert
 
       opts.each do |k,v|
         var = "@#{k}".to_sym
@@ -74,6 +75,16 @@ module HumanQL
         when :not
           args = args[0,1] if args.length > 1
           return nil if !constrained || ( !@nested_not && ops.rindex(:not) )
+          if @not_scope != true
+            a = args[0]
+            if a.is_a?( Array ) && a[0].is_a?( String )
+              if @not_scope == :invert
+                op, a[0] = a[0], op
+              else
+                return nil
+              end
+            end
+          end
         end
 
         a_ops = ops.dup.push( op )

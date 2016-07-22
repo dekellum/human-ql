@@ -16,13 +16,15 @@
 
 module HumanQL
 
+  # Normalizes query abstract syntax trees (ASTs) by imposing various
+  # limitations.
   class TreeNormalizer
 
     def initialize( opts = {} )
       @nested_scope = false
       @nested_not = false
       @unconstrained_not = true
-      @scope_can_constrain = false
+      @scope_can_constrain = true
 
       opts.each do |k,v|
         var = "@#{k}".to_sym

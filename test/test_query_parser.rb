@@ -25,7 +25,7 @@ class TestingQueryParser < HumanQL::QueryParser
   def initialize
     super
     @verbose = ARGV.include?( '--verbose' )
-    gen_scope_regexes( 'FOO' )
+    gen_scope_regexes( 'FOO', ignorecase: true )
   end
 end
 

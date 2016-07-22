@@ -73,8 +73,16 @@ module HumanQL
     attr_reader :default_op, :precedence, :verbose
 
     # Given a list of scope prefixes, generate the #scope and
-    # #scope_token regular expressions.
-    def gen_scope_regexes( *scopes, ignorecase: false )
+    # #scope_token regular expressions. A trailing hash is intepreted
+    # as options, see below.
+    #
+    # ==== Options
+    #
+    # :ignorecase:: If true, generate case insensitive regexes and
+    #               upcase the scope in AST output.
+    def gen_scope_regexes( *scopes )
+      opts = scopes.last.is_a?( Hash ) && scopes.pop || {}
+      ignorecase = !!(opts[:ignorecase])
       if scopes.empty?
         @scope = nil
         @scope_token = nil
@@ -86,9 +94,11 @@ module HumanQL
         opts = ignorecase ? Regexp::IGNORECASE : nil
         s = Regexp.union( *scopes ).source
         @scope = Regexp.new( '(' + s + '):', opts ).freeze
-        @scope_token = Regexp.new( "((?<=\A|#{SP})(#{s}))?#{SP}*:", opts ).freeze
+        @scope_token = Regexp.new( "((?<=\\A|#{SP})(#{s}))?#{SP}*:",
+                                   opts ).freeze
       end
       @scope_upcase = ignorecase
+      nil
     end
 
     def initialize( opts = {} )

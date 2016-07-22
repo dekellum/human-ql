@@ -31,7 +31,7 @@ end
 
 class TestQueryParser < Minitest::Test
   TC = TestingQueryParser.new
-  DN = HumanQL::TreeNormalizer.new
+  DN = HumanQL::TreeNormalizer.new( not_scope: true )
 
   def test_norm_prefix
     assert_equal( '-',      TC.norm_prefix( '-' ) )

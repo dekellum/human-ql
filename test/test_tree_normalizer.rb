@@ -92,6 +92,15 @@ class TestTreeNormalizer < Minitest::Test
     # Should be inverted
     assert_norm( DN, [ S1, [ :not, A ] ],
                      [ :not, [ S1, A ] ] )
+    assert_norm( DN, [ S1, [ :not, A ] ],
+                     [ :not, [ :and, [ S1, A ] ] ] )
+    assert_norm( DN, [ :and, [ S1, [ :not, A ] ], B ],
+                     [ :and, [ :not, [ S1, A ] ], B ] )
+  end
+
+  def test_not_scope_indirect
+    assert_norm( DN, [ :not, B ],
+                     [ :not, [ :or, [ S1, A ], B ] ] )
   end
 
   def test_unconstrained_scope_not

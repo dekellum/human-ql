@@ -76,10 +76,11 @@ module HumanQL
           args = args[0,1] if args.length > 1
           return nil if !constrained || ( !@nested_not && ops.rindex(:not) )
           if @not_scope != true
-            a = args[0]
-            if a.is_a?( Array ) && a[0].is_a?( String )
+            na = _normalize( args[0], ops, constrained )
+            if na.is_a?( Array ) && na[0].is_a?( String )
               if @not_scope == :invert
-                op, a[0] = a[0], op
+                op, na[0] = na[0], op
+                args = [ na ]
               else
                 return nil
               end
@@ -96,6 +97,10 @@ module HumanQL
           elsif a # filter nil
             out << a
           end
+        end
+
+        if @not_scope != true && op.is_a?( String ) && ops.rindex(:not)
+          return nil
         end
 
         if ( op == :and || op == :or ) && out.length < 2

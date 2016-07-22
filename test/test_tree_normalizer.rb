@@ -38,6 +38,10 @@ class TestTreeNormalizer < Minitest::Test
     assert_equal( expected, output, input )
   end
 
+  def assert_norm_identity( normalizer, id )
+    assert_norm( normalizer, id, id )
+  end
+
   def test_basic_norm_0
     assert_norm( DN, nil, nil )
     assert_norm( DN, nil, [ :and ] )
@@ -97,18 +101,21 @@ class TestTreeNormalizer < Minitest::Test
 
   def test_unconstrained_not
     assert_norm( UN, nil, [ :not, A ] )
-    assert_norm( UN, [ :and, [ :not, A ], B ], [ :and, [ :not, A ], B ] )
     assert_norm( UN, B, [ :or, [ :not, A ], B ] )
   end
 
-  def test_unconstrained_not_thwart
-    skip( "Need new normalization check for this case" )
+  def test_unconstrained_not_complex
     assert_norm( UN, nil, [ :and, [ :not, A ], [ :not, A ] ] )
+    assert_norm( UN, B, [ :and, [ :not, A ], [ :or, [ :not, A ], B ] ] )
   end
 
   def test_constrained_not
-    assert_norm( UN, [ :and, A, [ :or, [ :not, B ], [ :not, C ] ] ],
-                     [ :and, A, [ :or, [ :not, B ], [ :not, C ] ] ] )
+    assert_norm_identity( UN, [ :and, [ :not, A ], B ] )
+    assert_norm_identity( UN, [ :and, A, [ :or, [ :not, B ], [ :not, C ] ] ] )
+    assert_norm_identity( UN, [ :and, [ :or, A, D ],
+                                      [ :or, [ :not, B ], [ :not, C ] ] ] )
+    assert_norm_identity( UN, [ :and, [ :not, A ],
+                                      [ :or, [ :and, [ :not, B ], C ], D ] ] )
   end
 
 end

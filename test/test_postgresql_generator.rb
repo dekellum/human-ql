@@ -20,11 +20,9 @@ require_relative 'setup.rb'
 
 require 'human-ql/postgresql_custom_parser'
 require 'human-ql/postgresql_generator'
-require 'human-ql/tree_normalizer'
 
 class TestPostgresqlGenerator < Minitest::Test
   TC = HumanQL::PostgreSQLCustomParser.new( verbose: ARGV.include?('--verbose') )
-  UN = HumanQL::TreeNormalizer.new( unconstrained_not: false )
   PG = HumanQL::PostgreSQLGenerator.new
 
   DB = if defined?( ::Sequel )
@@ -33,7 +31,6 @@ class TestPostgresqlGenerator < Minitest::Test
 
   def assert_gen( expected_pg, hq )
     ast = TC.parse( hq )
-    ast = UN.normalize( ast )
     pg = PG.generate( ast )
     assert_equal( expected_pg, pg, ast )
   end
@@ -44,7 +41,6 @@ class TestPostgresqlGenerator < Minitest::Test
   def assert_tsq( expected, hq )
     if DB
       ast = TC.parse( hq )
-      ast = UN.normalize( ast )
       pg = PG.generate( ast )
       rt = DB["select to_tsquery(?) as tsquery", pg].first[:tsquery]
       assert_equal( expected, rt, ast )
@@ -134,9 +130,8 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_funk_2
-    # Note, double :not with stopword would crash PG 9.6 beta1-2
-    # without extra_norm filtering
-    assert_tsq( "'cat'", "-(a -boy) & cat" )
+    # This used to crash PG 9.6 beta 1-2. This was fixed in beta 3.
+    assert_tsq( "'boy' & 'cat'", "-(a -boy) & cat" )
   end
 
   def test_gen_or_not

@@ -75,15 +75,16 @@ module HumanQL
         when :not
           args = args[0,1] if args.length > 1
           return nil if !constrained || ( !@nested_not && ops.rindex(:not) )
-          if @not_scope != true
+          if @not_scope == :invert
+            # [1] For :invert to work, we need to normalize without
+            # the :not in ops. Otherwise below not_scope [2] check
+            # would delete the scope. The other reason for the
+            # _normalize here is to collapse single arg :and, etc.
+            # before testing
             na = _normalize( args[0], ops, constrained )
             if na.is_a?( Array ) && na[0].is_a?( String )
-              if @not_scope == :invert
-                op, na[0] = na[0], op
-                args = [ na ]
-              else
-                return nil
-              end
+              op, na[0] = na[0], op
+              return [ op, na ]
             end
           end
         end
@@ -99,13 +100,13 @@ module HumanQL
           end
         end
 
-        if @not_scope != true && op.is_a?( String ) && ops.rindex(:not)
-          return nil
-        end
-
         if ( op == :and || op == :or ) && out.length < 2
           out[0]
         elsif out.empty?
+          nil
+        # [2] If scope still found below a not, delete it.
+        # With :invert, this implies nodes intervening
+        elsif @not_scope != true && op.is_a?( String ) && ops.rindex(:not)
           nil
         else
           out.unshift( op )

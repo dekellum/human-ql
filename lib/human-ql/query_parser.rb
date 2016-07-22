@@ -131,7 +131,17 @@ module HumanQL
     def parse( q )
       q = normalize( q )
       tokens = q ? q.split(' ') : []
-      parse_tree( tokens )
+      log { "Parse: " + tokens.join( ' ' ) }
+      ast = parse_tree( tokens )
+      log { "AST: " + ast.inspect }
+      ast
+    end
+
+    def log( l = nil )
+      if @verbose
+        l = yield if block_given?
+        $stderr.puts( l )
+      end
     end
 
     def parse_tree( tokens )
@@ -253,11 +263,13 @@ module HumanQL
         @has_op = true
         @index = 0
         @last_term = -1
-        log
       end
 
       def log( l = nil )
-        $stderr.puts( l ) if @verbose
+        if @verbose
+          l = yield if block_given?
+          $stderr.puts( l )
+        end
       end
 
       def dump( fr )
@@ -294,7 +306,7 @@ module HumanQL
         if unary?( op )
           push_op( @default_op ) unless @has_op
         elsif @node.length < 2 # no proceeding term
-          log "Ignoring leading #{op.inspect} (index #{@index})" if @verbose
+          log { "Ignoring leading #{op.inspect} (index #{@index})" }
           return
         end
         loop do
@@ -328,7 +340,7 @@ module HumanQL
 
       def op_to_node( opi, op )
         if opi >= @last_term
-          log "Ignoring trailing #{op.inspect} (index #{opi})" if @verbose
+          log { "Ignoring trailing #{op.inspect} (index #{opi})" }
           return
         end
         o1 = pop_term

@@ -29,6 +29,12 @@ class TestPostgresqlFuzz < Minitest::Test
 
   DB = Sequel.connect( "postgres://localhost/human_ql_test" )
 
+  PASSES = if $0 == __FILE__
+             100
+           else
+             1
+           end
+
   # Assert that parsing via PG to_tsquery(generated) doesn't fail
   def assert_pg_parse( hq )
     ast = TC.parse( hq )
@@ -41,6 +47,8 @@ class TestPostgresqlFuzz < Minitest::Test
       rescue Sequel::DatabaseError => e
         fail( "On query #{hq.inspect} -> #{ast.inspect}: #{ e.to_s }" )
       end
+    else
+      pass
     end
   end
 
@@ -50,17 +58,19 @@ class TestPostgresqlFuzz < Minitest::Test
   # Characters which are likely to cause trouble
   RANDOM_C = '({"\'a !:* ,^#:/-0.123e-9)<>'.freeze
 
-  def test_fuzz
-    10000.times do
-      s = rand( GENERIC_Q.length )
-      l = rand( GENERIC_Q.length * 2 )
-      q = GENERIC_Q[s,l]
-      20.times do
-        if rand(3) == 1
-          q[rand(q.length+1)] = fuzz
+  PASSES.times do |i|
+    define_method( "test_fuzz_#{i}" ) do
+      1000.times do
+        s = rand( GENERIC_Q.length )
+        l = rand( GENERIC_Q.length * 2 )
+        q = GENERIC_Q[s,l]
+        20.times do
+          if rand(3) == 1
+            q[rand(q.length+1)] = fuzz
+          end
         end
+        assert_pg_parse( q )
       end
-      assert_pg_parse( q )
     end
   end
 

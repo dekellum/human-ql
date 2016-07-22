@@ -80,11 +80,12 @@ class TestTreeNormalizer < Minitest::Test
   end
 
   def test_nested_same_scope
-    assert_norm( DN, [ S2, [ :and, A, B ] ], [ S2, [ :and, A, [ S2, B ] ] ] )
+    assert_norm( DN, [ S2, [ :and, A,       B ] ],
+                     [ S2, [ :and, A, [ S2, B ] ] ] )
   end
 
   def test_scope_not
-    assert_norm( DN, [ S1, [ :not, A ] ], [ S1, [ :not, A ] ] )
+    assert_norm_identity( DN, [ S1, [ :not, A ] ] )
   end
 
   def test_not_scope

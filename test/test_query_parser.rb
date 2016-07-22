@@ -138,6 +138,15 @@ class TestQueryParser < Minitest::Test
     assert_parse( [ 'FOO', [ :not, A ] ], 'FOO:-a' )
   end
 
+  def test_parse_not_scope_paren
+    assert_parse( [ :not, [ 'FOO', A ] ], '-(FOO:a)' )
+  end
+
+  def test_parse_not_scope
+    assert_parse( [ 'FOO', A ], '- FOO:a' )
+    assert_parse( [ :and, [ :not, 'FOO' ], A ], '-FOO:a' )
+  end
+
   def test_parse_phrase
     assert_parse( [ :phrase, A, B ], '"a b"' )
   end

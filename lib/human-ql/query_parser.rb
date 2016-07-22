@@ -38,11 +38,6 @@ module HumanQL
     # a AND ( B OR C )       --> [ :and, a, [ :or, B, C ] ]
     # SCOPE: expr            --> [ 'SCOPE', expr ]
     # NOT expr, -expr        --> [ :not, expr ]
-    #
-    # FIXME: Additional special characters to be filtered out:
-    # ":" when not matching a scope, replace with space
-    # "*" to_tsquery significant
-    # "!" (Used by Postgresql as not)
     #++
 
     SP  = "[[:space:]]".freeze

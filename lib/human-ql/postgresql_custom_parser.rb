@@ -18,20 +18,18 @@ require 'human-ql/query_parser'
 
 module HumanQL
 
-  # Extends the generic QueryParser with extra special character
-  # normalization and filtering so as to avoid syntax errors in
-  # PostgreSQL to_tsquery() for any known input.  Note that this is
-  # still a parser for the HumanQL query language, not any PostgreSQL
-  # specific language.
+  # Extends the generic QueryParser with extra special character and
+  # token filtering so as to avoid syntax errors in PostgreSQL
+  # to_tsquery() for any known input.  Note that this is still a
+  # parser for the HumanQL query language, not anything implemented in
+  # PostgreSQL.
   class PostgreSQLCustomParser < QueryParser
     def initialize(*args)
       super
 
       # Extend the spaces pattern to include all known to_tsquery
       # special characters that aren't already being handled via
-      # default QueryParser operators. Note that ':' is included,
-      # since this default/testing parser doesn't define scopes, use
-      # norm_scopes which would otherwise handle ':'
+      # default QueryParser operators.
       @spaces = /[[:space:]*:!'<>]+/.freeze
 
       # Use by custom #norm_phrase_tokens as a superset of the

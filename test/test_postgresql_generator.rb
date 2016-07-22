@@ -139,4 +139,8 @@ class TestPostgresqlGenerator < Minitest::Test
     assert_tsq( "'cat'", "-(a -boy) & cat" )
   end
 
+  def test_gen_or_not
+    assert_tsq( "'ape' & ( !'boy' | !'cat' )", "ape & ( -boy | -cat )" )
+  end
+
 end

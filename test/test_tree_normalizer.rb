@@ -90,4 +90,9 @@ class TestTreeNormalizer < Minitest::Test
     assert_norm( UN, nil, [:and, [:not, A ], [:not, A ] ] )
   end
 
+  def test_constrained_not
+    assert_norm( UN, [:and, A, [:or, [:not, B ], [:not, C ] ] ],
+                     [:and, A, [:or, [:not, B ], [:not, C ] ] ] )
+  end
+
 end

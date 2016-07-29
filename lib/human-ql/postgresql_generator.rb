@@ -55,7 +55,6 @@ module HumanQL
         when :or
           pwrap( terms_join( args, OR ) )
         when :not
-          raise "Weird! #{node.inspect}" unless args.length == 1
           if args[0].is_a?( Array )
             NOT + pwrap( generate( args[0] ) )
           else

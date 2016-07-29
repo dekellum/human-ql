@@ -57,7 +57,12 @@ class TestPostgresqlGenerator < Minitest::Test
     assert_tsq( "'ape' & 'boy'", 'ape boy' )
   end
 
-  def test_gen_phrase
+  def test_gen_phrase_1
+    assert_gen( 'ape', '"ape"' )
+    assert_tsq( "'ape'", '"ape"' )
+  end
+
+  def test_gen_phrase_2
     assert_gen( 'ape <-> boy', '"ape boy"' )
     assert_tsq( "'ape' <-> 'boy'", '"ape boy"' )
   end

@@ -16,7 +16,9 @@
 
 module HumanQL
 
-  # Human language, lenient query parser.
+  # Human friendly, lenient query parser. Parses an arbitrary input
+  # string and outputs an abstract syntax tree (AST), which uses ruby
+  # Array's as S-expressions.
   #
   # === Supported Syntax Summary
   #
@@ -28,8 +30,8 @@ module HumanQL
   #    a b c                    --> [ :and, 'a', 'b', 'c' ]
   #    a OR b, a|b              --> [ :or, 'a', 'b' ]
   #    a AND b, a&b             --> [ :and, 'a', 'b' ]
-  #    a b|c                    --> [ :and, 'a', [ :or, 'b', 'c' ] ]
-  #    (a b) OR (c d)           --> [ :or, [ :and, 'a', 'b' ], [ :and, 'c', 'd' ] ]
+  #    a b|c                    --> [ :and, 'a', [:or, 'b', 'c'] ]
+  #    (a b) OR (c d)           --> [ :or, [:and, 'a', 'b'], [:and, 'c', 'd'] ]
   #    NOT expr, -expr          --> [ :not, expr ]
   #    SCOPE:expr, SCOPE : expr --> [ 'SCOPE', expr ]
   #

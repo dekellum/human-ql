@@ -29,7 +29,7 @@ module HumanQL
   #    a OR b, a|b              --> [ :or, 'a', 'b' ]
   #    a AND b, a&b             --> [ :and, 'a', 'b' ]
   #    a b|c                    --> [ :and, 'a', [ :or, 'b', 'c' ] ]
-  #    (a b) | (c d)            --> [ :or, [ :and, 'a', 'b' ], [ :and, 'c', 'd' ] ]
+  #    (a b) OR (c d)           --> [ :or, [ :and, 'a', 'b' ], [ :and, 'c', 'd' ] ]
   #    NOT expr, -expr          --> [ :not, expr ]
   #    SCOPE:expr, SCOPE : expr --> [ 'SCOPE', expr ]
   #
@@ -274,12 +274,15 @@ module HumanQL
       s.flush_tree
     end
 
+    # Given scope token, return the name (minus trailing ':'),
+    # upcased if #scope_upcase.
     def scope_op( token )
       t = token[0...-1]
       t.upcase! if @scope_upcase
       t
     end
 
+    # Find token matching #rparen in remaining tokens.
     def rparen_index( tokens )
       li = 1
       phrase = false
@@ -301,13 +304,13 @@ module HumanQL
     end
 
     # Treat various punctuation form operators as _always_ being
-    # seperate tokens.
+    # seperate tokens per #infix_token pattern.
     # Note: Must always call norm_space _after_ this
     def norm_infix( q )
       q.gsub( @infix_token, ' \0 ' )
     end
 
-    # Split prefixes as seperate tokens
+    # Split prefixes as seperate tokens per #prefix_token pattern
     def norm_prefix( q )
       if @prefix_token
         q.gsub( @prefix_token, '\0 ' )
@@ -316,6 +319,10 @@ module HumanQL
       end
     end
 
+    # If #scope_token is specified, normalize scopes as separate
+    # 'SCOPE:' tokens.
+    # This expects the 2nd capture group of #scope_token to be the
+    # actual matching scope name, if present.
     def norm_scope( q )
       if @scope_token
         q.gsub( @scope_token ) do
@@ -330,10 +337,14 @@ module HumanQL
       end
     end
 
+    # Normalize any whitespace to a single ASCII space character and
+    # strip leading/trailing whitepsace.
     def norm_space( q )
       q.gsub(@spaces, ' ').strip
     end
 
+    # Runs the suite of norm_* functions. Returns nil if the result is
+    # empty.
     def normalize( q )
       q ||= ''
       q = norm_infix( q )
@@ -343,13 +354,14 @@ module HumanQL
       q unless q.empty?
     end
 
+    # Select which tokens survive in a phrase. By default tokens
+    # matching #lparen and #rparen are dropped.
     def norm_phrase_tokens( tokens )
       tokens.reject { |t| @lparen === t || @rparen === t }
     end
 
     # Internal state keeping
     class ParseState # :nodoc:
-
 
       def initialize( parser )
         @default_op = parser.default_op

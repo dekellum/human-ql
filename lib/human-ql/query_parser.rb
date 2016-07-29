@@ -16,71 +16,134 @@
 
 module HumanQL
 
-  # Human language, lenient query parser
+  # Human language, lenient query parser.
   #
-  # This adapts the infix precedence handling and operator stack of the
+  # === Supported Syntax Summary
+  #
+  # As per defaults. In the table below, input variations on the left
+  # are sperated by ',' and output AST is shown on the right.
+  #
+  #    a                        --> 'a'
+  #    "a b c"                  --> [ :phrase, 'a', 'b', 'c' ]
+  #    a b c                    --> [ :and, 'a', 'b', 'c' ] # default_op
+  #    a OR b, a|b,  a | b      --> [ :or, 'a', 'b' ]
+  #    a AND b, a&b, a & b      --> [ :and, 'a', 'b' ]
+  #    a AND ( b OR c )         --> [ :and, 'a', [ :or, 'b', 'c' ] ]
+  #    SCOPE:expr, SCOPE : expr --> [ 'SCOPE', expr ]
+  #    NOT expr, -expr          --> [ :not, expr ]
+  #
+  # Where:
+  # * 'expr' may be simple term, phrase, or parenthetical expression.
+  # * SCOPEs must be specified. By default, no scopes are
+  #   supported.
+  #
+  # === Customization
+  #
+  # The lexing and token matching patterns, as well as other
+  # attributes used in the parser may be adjusted via constructor
+  # options or attribute writer methods. Many of these attributes may
+  # either be String constants or patterns supporting multiple values
+  # as needed.  Some features may be disabled by setting these values
+  # to nil (e.g. match no tokens). While accessors are defined,
+  # internally the instance variables are accessed directly for
+  # speed. Tests should this is as fast as using constants (which
+  # would be harder to modify), and faster than reader method calls.
+  #
+  # === Implementation
+  #
+  # The parser implementation adapts the infix precedence handling and
+  # operator stack of the
   # {Shunting Yard Algorithm}[https://en.wikipedia.org/wiki/Shunting-yard_algorithm]
-  # originally described by Edsger Dijkstra.
-  #
-  # This class serves as a container of various contants. These are
-  # always referenced internally via `self::` so that they may be
-  # overridden with matching named contants in a derived class.
-  # The token matching constants are matched via `===` so that either
-  # Regexp or String values may be set.
+  # originally described by Edsger Dijkstra. Attributes #default_op
+  # and #precedence control the handling of explicit or implied infix
+  # operators.
   class QueryParser
 
-    #--
-    # Supported syntax:
-    # "a b c"                --> [ :phrase, a, b, c ]
-    # a b c (default :and)   --> [ :and, a, b, c ]
-    # a OR b, a|b -> a | b   --> [ :or, a, b ]
-    # a AND B, a&B --> a & B --> [ :and, a, b ]
-    # a AND ( B OR C )       --> [ :and, a, [ :or, B, C ] ]
-    # SCOPE: expr            --> [ 'SCOPE', expr ]
-    # NOT expr, -expr        --> [ :not, expr ]
-    #++
-
+    # String pattern for Unicode spaces
     SP  = "[[:space:]]".freeze
+
+    # String pattern for Unicode non-spaces
     NSP = "[^#{SP}]".freeze
+
+    # Regex for 1-to-many Unicode spaces
     SPACES = /#{SP}+/.freeze
 
-    # Default precedence of supported operators.  To limit
-    # human surprise, the DEFAULT_OP should be lowest. The default
-    # precedence for unlisted operators (like scopes) is 10, thus :not
-    # should be set higher.
+    # Default precedence of supported operators.
     DEFAULT_PRECEDENCE = {
       not: 11,
       or:  2,
       and: 1
     }.freeze
 
-    OR_TOKEN = /\A(OR|\|)\z/i.freeze
-    AND_TOKEN = /\A(AND|\&)\z/i.freeze
-    NOT_TOKEN = /\A(NOT|\-)\z/i.freeze
+    # The default operator when none is otherwise given between parsed
+    # terms.
+    # Default: :and
+    attr_accessor :default_op
 
-    LQUOTE = '"'.freeze
-    RQUOTE = '"'.freeze
-    LPAREN = '('.freeze
-    RPAREN = ')'.freeze
+    # Hash of operators to precendence Integer value.  The hash should
+    # also provide a default for unlisted operators like any supportes
+    # copes. To limit human surprise, the #default_op should be lowest.
+    # The default is as per DEFAULT_PRECEDENCE with a default value of
+    # 10, thus :not has the highest precedence at 11.
+    attr_accessor :precedence
 
-    INFIX_TOKEN = /[()|&"]/.freeze
-    PREFIX_TOKEN = /(?<=\A|#{SP})-(?=#{NSP})/.freeze
+    # Pattern matching one or more characters to treat as white-space
+    # Default: SPACES
+    attr_accessor :spaces
 
-    private_constant :DEFAULT_PRECEDENCE, :OR_TOKEN, :AND_TOKEN, :NOT_TOKEN,
-                     :LQUOTE, :RQUOTE, :LPAREN, :RPAREN
-                     #:SP, :NSP, :SPACES
+    # Pattern used for lexing to treat certain punctuation characters
+    # as seperate tokens, even if they are not space seperated.
+    # Default: Pattern matching any characters '(', ')', '|', '&', '"'
+    # as used as operator/parenthesis tokens in defaults below.
+    attr_accessor :infix_token
 
-    attr_reader :default_op, :precedence, :verbose
+    # Pattern used for lexing to treat certain characters as seperate
+    # tokens when appearing as a prefix only.
+    # Default '-' (as used in default #not_tokens)
+    attr_accessor :prefix_token
 
-    # Given a list of scope prefixes, generate the #scope and
-    # #scope_token regular expressions. A trailing hash is intepreted
+    # OR operator token pattern. Should match the entire token using
+    # the '\A' and '/z' syntax for begining and end of string.
+    # Default: Pattern matching complete tokens 'OR', 'or', or '|'
+    attr_accessor :or_token
+
+    # AND operator token pattern. Should match the entire token using
+    # the '\A' and '/z' syntax for begining and end of string.
+    # Default: Pattern matching complete tokens 'AND', 'and', or '&'
+    attr_accessor :and_token
+
+    # NOT operator token pattern. Should match the entire token using
+    # the '\A' and '/z' syntax for begining and end of string.
+    # Default: Pattern matching complete tokens 'NOT', 'not', or '-'
+    attr_accessor :not_token
+
+    # Left quote pattern or value
+    # Default: '"'
+    attr_accessor :lquote
+
+    # Right quote pattern or value. Its fine if this is the same as
+    # #lquote.
+    # Default: '"'
+    attr_accessor :rquote
+
+    # Left parentheses pattern or value
+    # Default: '('
+    attr_accessor :lparen
+
+    # Right parentheses pattern or value
+    # Default: ')'
+    attr_accessor :rparen
+
+    # Given one or an Array of scope prefixes, generate the #scope and
+    # #scope_token patterns. A trailing hash is intepreted
     # as options, see below.
     #
     # ==== Options
     #
     # :ignorecase:: If true, generate case insensitive regexes and
-    #               upcase the scope in AST output.
-    def gen_scope_regexes( *scopes )
+    #               upcase the scope in AST output (per #scope_upcase)
+    def scopes=( scopes )
+      scopes = Array( scopes )
       opts = scopes.last.is_a?( Hash ) && scopes.pop || {}
       ignorecase = !!(opts[:ignorecase])
       if scopes.empty?
@@ -101,6 +164,31 @@ module HumanQL
       nil
     end
 
+    # Scope pattern or value matching post-normalized scope token,
+    # including trailing ':' but without whitespace.
+    # Default: nil -> no scopes
+    attr_accessor :scope
+
+    # SCOPE unary operator pattern used for lexing to treat a scope
+    # prefix, e.g. 'SCOPE' + ':', with or without internal or trailing
+    # whitespace as single token. Used by #norm_scope, where it also
+    # treats a non-matching ':' as whitespace. This would normally be
+    # set via #scopes=.
+    # Default: nil -> no scopes
+    attr_accessor :scope_token
+
+    # Should scope tokens be upcased in the AST? This would imply
+    # case-insensitive #scope, and #scope_token as generated via
+    # #scopes= with the `ignorecase: true` option.
+    # Default: false
+    attr_accessor :scope_upcase
+
+    # If true, log parsing progress and state to $stderr.
+    # Default: false
+    attr_accessor :verbose
+
+    # Construct given options which are attribute names to
+    # set.
     def initialize( opts = {} )
       @default_op = :and
 
@@ -109,27 +197,24 @@ module HumanQL
       @precedence.freeze
 
       @spaces = SPACES
-      @or_token  =  OR_TOKEN
-      @and_token = AND_TOKEN
-      @not_token = NOT_TOKEN
-      @lquote = LQUOTE
-      @rquote = RQUOTE
-      @lparen = LPAREN
-      @rparen = RPAREN
-      @verbose = false
-      @infix_token = INFIX_TOKEN
-      @prefix_token = PREFIX_TOKEN
+      @infix_token  = /[()|&"]/.freeze
+      @prefix_token = /(?<=\A|#{SP})-(?=#{NSP})/.freeze
+      @or_token  = /\A(OR|\|)\z/i.freeze
+      @and_token = /\A(AND|\&)\z/i.freeze
+      @not_token = /\A(NOT|\-)\z/i.freeze
+      @lquote = '"'.freeze
+      @rquote = '"'.freeze
+      @lparen = '('.freeze
+      @rparen = ')'.freeze
+
       @scope = nil
       @scope_token = nil
       @scope_upcase = false
 
-      opts.each do |k,v|
-        var = "@#{k}".to_sym
-        if instance_variable_defined?( var )
-          instance_variable_set( var, v )
-        else
-          raise "QueryParser unsupported option #{k.inspect}"
-        end
+      @verbose = false
+
+      opts.each do |name,val|
+        send( name.to_s + '=', val )
       end
     end
 
@@ -257,7 +342,9 @@ module HumanQL
       tokens.reject { |t| @lparen === t || @rparen === t }
     end
 
-    class ParseState
+    # Internal state keeping
+    class ParseState # :nodoc:
+
 
       def initialize( parser )
         @default_op = parser.default_op

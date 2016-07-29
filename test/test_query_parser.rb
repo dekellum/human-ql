@@ -23,9 +23,8 @@ require 'human-ql/tree_normalizer'
 
 class TestingQueryParser < HumanQL::QueryParser
   def initialize
-    super
-    @verbose = ARGV.include?( '--verbose' )
-    gen_scope_regexes( 'FOO', ignorecase: true )
+    super( scopes: [ 'FOO', ignorecase: true ],
+           verbose: ARGV.include?( '--verbose' ) )
   end
 end
 

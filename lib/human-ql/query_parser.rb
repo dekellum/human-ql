@@ -461,7 +461,7 @@ module HumanQL
             end
           end
         else
-          log "No argument to #{op.inspect}, ignoring"
+          log { "No argument to #{op.inspect}, ignoring" }
         end
       end
     end

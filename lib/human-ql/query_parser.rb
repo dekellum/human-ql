@@ -224,6 +224,10 @@ module HumanQL
     end
 
     def parse( q )
+      unless @default_op == :and || @default_op == :or
+        raise( "QueryParser#default_op is (#{@default_op.inspect}) " +
+               "(should be :and or :or)" )
+      end
       q = normalize( q )
       tokens = q ? q.split(' ') : []
       log { "Parse: " + tokens.join( ' ' ) }
@@ -410,8 +414,8 @@ module HumanQL
 
       def push_op( op )
         @index += 1
-        # Possible special case implied DEFAULT_OP in front of :not
-        # FIXME: Guard against DEFAULT_OP being set to not
+        # Possible special case implied DEFAULT_OP in front of :not or
+        # :scope.
         if unary?( op )
           push_op( @default_op ) unless @has_op
         elsif @node.length < 2 # no proceeding term

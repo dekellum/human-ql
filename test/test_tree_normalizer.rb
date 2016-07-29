@@ -123,6 +123,7 @@ class TestTreeNormalizer < Minitest::Test
 
   def test_constrained_not
     assert_norm_identity( UN, [ :and, [ :not, A ], B ] )
+    assert_norm_identity( UN, [ :and, [ :not, A ], [ :phrase, B, C ] ] )
     assert_norm_identity( UN, [ :and, A, [ :or, [ :not, B ], [ :not, C ] ] ] )
     assert_norm_identity( UN, [ :and, [ :or, A, D ],
                                       [ :or, [ :not, B ], [ :not, C ] ] ] )

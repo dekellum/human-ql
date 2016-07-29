@@ -127,6 +127,8 @@ module HumanQL
           args.any? { |a| constraint?( a ) }
         when :or
           args.all? { |a| constraint?( a ) }
+        when :phrase
+          true
         when String
           scope_can_constrain?( op ) && constraint?( args.first )
         else

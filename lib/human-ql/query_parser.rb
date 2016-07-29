@@ -20,36 +20,41 @@ module HumanQL
   #
   # === Supported Syntax Summary
   #
-  # As per defaults. In the table below, input variations on the left
-  # are sperated by ',' and output AST is shown on the right.
+  # As per defaults. In the table below, input string variations on
+  # the left are sperated by ',' and output AST is shown on the right.
   #
   #    a                        --> 'a'
   #    "a b c"                  --> [ :phrase, 'a', 'b', 'c' ]
-  #    a b c                    --> [ :and, 'a', 'b', 'c' ] # default_op
-  #    a OR b, a|b,  a | b      --> [ :or, 'a', 'b' ]
-  #    a AND b, a&b, a & b      --> [ :and, 'a', 'b' ]
-  #    a AND ( b OR c )         --> [ :and, 'a', [ :or, 'b', 'c' ] ]
-  #    SCOPE:expr, SCOPE : expr --> [ 'SCOPE', expr ]
+  #    a b c                    --> [ :and, 'a', 'b', 'c' ]
+  #    a OR b, a|b              --> [ :or, 'a', 'b' ]
+  #    a AND b, a&b             --> [ :and, 'a', 'b' ]
+  #    a b|c                    --> [ :and, 'a', [ :or, 'b', 'c' ] ]
+  #    (a b) | (c d)            --> [ :or, [ :and, 'a', 'b' ], [ :and, 'c', 'd' ] ]
   #    NOT expr, -expr          --> [ :not, expr ]
+  #    SCOPE:expr, SCOPE : expr --> [ 'SCOPE', expr ]
   #
   # Where:
   # * 'expr' may be simple term, phrase, or parenthetical expression.
   # * SCOPEs must be specified. By default, no scopes are
   #   supported.
   #
+  # The AST output from #parse may have various no-ops and
+  # redundances. Run it through a TreeNormalizer to avoid seeing or
+  # needing to handle these cases.
+  #
   # === Customization
   #
   # The lexing and token matching patterns, as well as other
   # attributes used in the parser may be adjusted via constructor
   # options or attribute writer methods. Many of these attributes may
-  # either be String constants or patterns supporting multiple values
-  # as needed.  Some features may be disabled by setting these values
-  # to nil (e.g. match no tokens). While accessors are defined,
+  # either be String constants or Regex patterns supporting multiple
+  # values as needed.  Some features may be disabled by setting these
+  # values to nil (e.g. match no tokens). While accessors are defined,
   # internally the instance variables are accessed directly for
-  # speed. Tests should this is as fast as using constants (which
-  # would be harder to modify), and faster than reader method calls.
+  # speed. Tests show this is as fast as using constants (which would
+  # be harder to modify) and faster than reader method calls.
   #
-  # === Implementation
+  # === Implementation Notes
   #
   # The parser implementation adapts the infix precedence handling and
   # operator stack of the

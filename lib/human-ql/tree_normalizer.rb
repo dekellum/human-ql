@@ -16,27 +16,27 @@
 
 module HumanQL
 
-  # Normalizes and imposes various limitations on query abstract syntax trees
-  # (ASTs).
+  # Normalizes and imposes various limitations on query abstract
+  # syntax trees (ASTs).
   class TreeNormalizer
 
     # Allow nested scopes?
-    # Default: false -> nested scopes are removed.
+    # Default: false -> nested scope nodes are removed.
     attr_accessor :nested_scope
 
     # Allow nested :not (in other words, double negatives)?
-    # Default: false -> nested not nodes are removed.
+    # Default: false -> nested :not nodes are removed.
     attr_accessor :nested_not
 
     # Allow unconstrained :not?
-    # Such a query may be costly. If false the unconstrained :not will
-    # be removed.
+    # Queries containing an unsconstrained :not may be costly to
+    # execute. If false the unconstrained :not will be removed.
     #
     # A :not node is considered "constrained" if it has an :and
     # ancestor with at least one contraint argument. A constraint
-    # argument is term or phrase, or :and node matching this same
-    # criteria, or :or node where all arguments match this criteria.
-    # See also #scope_can_constrain
+    # argument is a term, phrase, or :and node matching this same
+    # criteria, or an :or node where *all* arguments match this
+    # criteria. See also #scope_can_constrain.
     # Default: true
     attr_accessor :unconstrained_not
 

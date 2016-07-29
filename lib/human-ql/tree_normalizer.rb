@@ -16,10 +16,48 @@
 
 module HumanQL
 
-  # Normalizes query abstract syntax trees (ASTs) by imposing various
-  # limitations.
+  # Normalizes and imposes various limitations on query abstract syntax trees
+  # (ASTs).
   class TreeNormalizer
 
+    # Allow nested scopes?
+    # Default: false -> nested scopes are removed.
+    attr_accessor :nested_scope
+
+    # Allow nested :not (in other words, double negatives)?
+    # Default: false -> nested not nodes are removed.
+    attr_accessor :nested_not
+
+    # Allow unconstrained :not?
+    # Such a query may be costly. If false the unconstrained :not will
+    # be removed.
+    #
+    # A :not node is considered "constrained" if it has an :and
+    # ancestor with at least one contraint argument. A constraint
+    # argument is term or phrase, or :and node matching this same
+    # criteria, or :or node where all arguments match this criteria.
+    # See also #scope_can_constrain
+    # Default: true
+    attr_accessor :unconstrained_not
+
+    # Does a scope count as a constraint?
+    # Default: true -> a scope is a constraint if its argument is a
+    # constraint.
+    # If it depends on the scope, you can override
+    # #scope_can_constrain? with this logic.
+    attr_accessor :scope_can_constrain
+
+    # Allow SCOPE within :not?
+    # * If set to `:invert` normalizes `[:not, ['SCOPE', 'a']]` to
+    #   `['SCOPE', [:not, 'a']]`.
+    # * If set to `false`, the nested scope node is removed.
+    # * For either :invert or false, the scope node is otherwise
+    #   removed if found below a :not node.
+    # Default: :invert
+    attr_accessor :not_scope
+
+    # Construct given options that are applied via same name setters
+    # on self.
     def initialize( opts = {} )
       @nested_scope = false
       @nested_not = false
@@ -27,13 +65,8 @@ module HumanQL
       @scope_can_constrain = true
       @not_scope = :invert
 
-      opts.each do |k,v|
-        var = "@#{k}".to_sym
-        if instance_variable_defined?( var )
-          instance_variable_set( var, v )
-        else
-          raise "TreeNormalizer unsupported option #{k.inspect}"
-        end
+      opts.each do |name,val|
+        send( name.to_s + '=', val )
       end
     end
 
@@ -48,6 +81,31 @@ module HumanQL
     end
 
     EMPTY_STACK = [].freeze
+
+    # Return true if node is a valid constraint
+    def constraint?( node )
+      op,*args = node
+      if ! node.is_a?( Array )
+        true
+      elsif args.empty?
+        false
+      else
+        case op
+        when :and
+          args.any? { |a| constraint?( a ) }
+        when :or
+          args.all? { |a| constraint?( a ) }
+        when :phrase
+          true
+        when String
+          scope_can_constrain?( op ) && constraint?( args.first )
+        else
+          false
+        end
+      end
+    end
+
+    private
 
     def _normalize( node, ops, constrained )
       op,*args = node
@@ -78,7 +136,7 @@ module HumanQL
           if @not_scope == :invert
             # [1] For :invert to work, we need to normalize without
             # the :not in ops. Otherwise below not_scope [2] check
-            # would delete the scope. The other reason for the
+            # would remove the scope. The other reason for the
             # _normalize here is to collapse single arg :and, etc.
             # before testing
             na = _normalize( args[0], ops, constrained )
@@ -104,35 +162,12 @@ module HumanQL
           out[0]
         elsif out.empty?
           nil
-        # [2] If scope still found below a not, delete it.
+        # [2] If scope still found below a :not, remove it.
         # With :invert, this implies nodes intervening
         elsif @not_scope != true && op.is_a?( String ) && ops.rindex(:not)
           nil
         else
           out.unshift( op )
-        end
-      end
-    end
-
-    # Return true if node is a valid constraint
-    def constraint?( node )
-      op,*args = node
-      if ! node.is_a?( Array )
-        true
-      elsif args.empty?
-        false
-      else
-        case op
-        when :and
-          args.any? { |a| constraint?( a ) }
-        when :or
-          args.all? { |a| constraint?( a ) }
-        when :phrase
-          true
-        when String
-          scope_can_constrain?( op ) && constraint?( args.first )
-        else
-          false
         end
       end
     end

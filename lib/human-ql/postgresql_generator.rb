@@ -16,8 +16,16 @@
 
 module HumanQL
 
-  # Reliably generate queries suitable for PostgreSQL's to_tsquery
-  # function, from a HumanQL abstract syntax tree AST.
+  # Generate query strings suitable for passing to PostgreSQL's
+  # to_tsquery function, from a HumanQL abstract syntax tree (AST).
+  #
+  # In order to guarantee valid output for any human input, the AST
+  # should be created using PostgreSQLCustomParser and normalized via
+  # TreeNormalizer (with minimal defaults).
+  #
+  # Any scope's provided in the parser should have been handled and
+  # stripped out of the AST, as PostgreSQL is not expected to have a
+  # direct equivalent in tsquery syntax.
   class PostgreSQLGenerator
 
     #--
@@ -32,6 +40,8 @@ module HumanQL
     NOT = '!'.freeze
     NEAR = ' <-> '.freeze
 
+    # Given the root node of the AST, return a string in PostgreSQL
+    # tsquery syntax.
     def generate( node )
       op,*args = node
       if ! node.is_a?( Array )
@@ -58,6 +68,8 @@ module HumanQL
         end
       end
     end
+
+    protected
 
     def terms_join( args, op )
       args.map { |a| generate( a ) }.join( op )

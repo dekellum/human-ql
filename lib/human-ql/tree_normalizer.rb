@@ -70,6 +70,7 @@ module HumanQL
       end
     end
 
+    # Return a new normalized AST from the given AST root node.
     def normalize( node )
       _normalize( node, EMPTY_STACK, @unconstrained_not )
     end

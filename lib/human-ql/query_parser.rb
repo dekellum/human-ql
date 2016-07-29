@@ -161,7 +161,7 @@ module HumanQL
       else
         opts = ignorecase ? Regexp::IGNORECASE : nil
         s = Regexp.union( *scopes ).source
-        @scope = Regexp.new( '(' + s + '):', opts ).freeze
+        @scope = Regexp.new( '\A(' + s + '):\z', opts ).freeze
         @scope_token = Regexp.new( "((?<=\\A|#{SP})(#{s}))?#{SP}*:",
                                    opts ).freeze
       end

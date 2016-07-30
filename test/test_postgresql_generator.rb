@@ -22,12 +22,25 @@ require 'human-ql/postgresql_custom_parser'
 require 'human-ql/postgresql_generator'
 
 class TestPostgresqlGenerator < Minitest::Test
-  TC = HumanQL::PostgreSQLCustomParser.new( verbose: ARGV.include?('--verbose') )
-  PG = HumanQL::PostgreSQLGenerator.new
-
   DB = if defined?( ::Sequel )
          Sequel.connect( "postgres://localhost/human_ql_test" )
        end
+
+  PG_VERSION =
+    begin
+      v = DB &&
+          DB["select current_setting('server_version') as v"].first[:v]
+      v &&= v.split('.').map(&:to_i)
+      v || []
+    end
+
+  TC = HumanQL::PostgreSQLCustomParser.new( verbose: ARGV.include?('--verbose'),
+                                            pg_version: PG_VERSION )
+  PG = HumanQL::PostgreSQLGenerator.new
+
+  def pg_gte_9_6?
+    ( PG_VERSION <=> [9,6] ) >= 0
+  end
 
   def assert_gen( expected_pg, hq )
     ast = TC.parse( hq )
@@ -57,14 +70,14 @@ class TestPostgresqlGenerator < Minitest::Test
     assert_tsq( "'ape' & 'boy'", 'ape boy' )
   end
 
-  def test_gen_phrase_1
-    assert_gen( 'ape', '"ape"' )
-    assert_tsq( "'ape'", '"ape"' )
-  end
-
-  def test_gen_phrase_2
-    assert_gen( 'ape <-> boy', '"ape boy"' )
-    assert_tsq( "'ape' <-> 'boy'", '"ape boy"' )
+  def test_gen_phrase
+    if pg_gte_9_6?
+      assert_gen( 'ape <-> boy', '"ape boy"' )
+      assert_tsq( "'ape' <-> 'boy'", '"ape boy"' )
+    else
+      assert_gen( 'ape & boy', '"ape boy"' )
+      assert_tsq( "'ape' & 'boy'", '"ape boy"' )
+    end
   end
 
   def test_gen_empty
@@ -92,6 +105,7 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_gen_not_phrase
+    skip( "For postgresql 9.6+" ) unless pg_gte_9_6?
     assert_gen( '!(ape <-> boy)', '-"ape boy"' )
     assert_tsq( "!( 'ape' <-> 'boy' )", '-"ape boy"' )
   end
@@ -135,8 +149,13 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_funk_2
-    # This used to crash PG 9.6 beta 1-2. This was fixed in beta 3.
-    assert_tsq( "'boy' & 'cat'", "-(a -boy) & cat" )
+    if pg_gte_9_6?
+      # Crashes PG 9.6 beta 1-2, fixed in beta 3.
+      assert_tsq( "'boy' & 'cat'", "-(a -boy) & cat" )
+    else
+      # PG 9.5 doesn't normalize away the double not
+      assert_tsq( "!( !'boy' ) & 'cat'", "-(a -boy) & cat" )
+    end
   end
 
   def test_gen_or_not

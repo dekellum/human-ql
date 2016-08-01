@@ -28,7 +28,7 @@ module HumanQL
     def initialize(opts = {})
       pg_version = opts.delete(:pg_version)
       if pg_version.is_a?( String )
-        pg_version = pg_version.split('.').map(&:to_i)
+        pg_version = pg_version.split( '.' ).map( &:to_i )
       end
       pg_version ||= []
 
@@ -39,11 +39,11 @@ module HumanQL
         # Extend the spaces pattern to include all known to_tsquery
         # special characters that aren't already being handled via
         # default QueryParser operators.
-        @spaces = /[[:space:]*:!'<>]+/.freeze
+        self.spaces = /[[:space:]*:!'<>]+/.freeze
       else
-        @spaces = /[[:space:]*:!'"<>]+/.freeze
-        @lquote = nil
-        @rquote = nil
+        self.spaces = /[[:space:]*:!'"<>]+/.freeze
+        self.lquote = nil
+        self.rquote = nil
       end
 
       # Use by custom #norm_phrase_tokens as a superset of the

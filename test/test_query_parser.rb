@@ -106,6 +106,7 @@ class TestQueryParser < Minitest::Test
   C = 'c'
   D = 'd'
   E = 'e'
+  FOO = 'FOO'
 
   def assert_parse( expected_tree, input )
     out = TC.parse( input )
@@ -122,28 +123,28 @@ class TestQueryParser < Minitest::Test
   end
 
   def test_parse_scope_basic
-    assert_parse( [ 'FOO', A ], 'FOO:a' )
-    assert_parse( [ 'FOO', A ], 'FOO: a' )
-    assert_parse( [ 'FOO', A ], 'FOO : a' )
+    assert_parse( [ FOO, A ], 'FOO:a' )
+    assert_parse( [ FOO, A ], 'FOO: a' )
+    assert_parse( [ FOO, A ], 'FOO : a' )
   end
 
   def test_parse_scope_complex
-    assert_parse( [ 'FOO', [ :phrase, A, B ] ], 'FOO:"a b"' )
-    assert_parse( [ 'FOO', [ :and, A, B ] ], 'FOO:(a b)' )
-    assert_parse( [ 'FOO', [ :or, A, B ] ], 'FOO:(a|b)' )
+    assert_parse( [ FOO, [ :phrase, A, B ] ], 'FOO:"a b"' )
+    assert_parse( [ FOO, [ :and, A, B ] ], 'FOO:(a b)' )
+    assert_parse( [ FOO, [ :or, A, B ] ], 'FOO:(a|b)' )
   end
 
   def test_parse_scope_not
-    assert_parse( [ 'FOO', [ :not, A ] ], 'FOO:-a' )
+    assert_parse( [ FOO, [ :not, A ] ], 'FOO:-a' )
   end
 
   def test_parse_not_scope_paren
-    assert_parse( [ :not, [ 'FOO', A ] ], '-(FOO:a)' )
+    assert_parse( [ :not, [ FOO, A ] ], '-(FOO:a)' )
   end
 
   def test_parse_not_scope
-    assert_parse( [ 'FOO', A ], '- FOO:a' )
-    assert_parse( [ :and, [ :not, 'FOO' ], A ], '-FOO:a' )
+    assert_parse( [ FOO, A ], '- FOO:a' )
+    assert_parse( [ :and, [ :not, FOO ], A ], '-FOO:a' )
   end
 
   def test_parse_phrase

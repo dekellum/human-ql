@@ -126,6 +126,8 @@ class TestQueryParser < Minitest::Test
     assert_parse( [ FOO, A ], 'FOO:a' )
     assert_parse( [ FOO, A ], 'FOO: a' )
     assert_parse( [ FOO, A ], 'FOO : a' )
+    assert_parse( [ :and, [ FOO, A ], [ FOO, B ] ], 'FOO : a FOO:b' )
+    assert_parse( [ :or, [ FOO, A ], [ FOO, B ] ], 'FOO : a | FOO:b' )
   end
 
   def test_parse_scope_complex

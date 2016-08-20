@@ -56,6 +56,14 @@ module HumanQL
     # Default: :invert
     attr_accessor :not_scope
 
+    # Allow only scopes combined with :and condition?
+    # Default: false
+    attr_accessor :scope_and_only
+
+    # Allow scope at root or first level only?
+    # Default: false
+    attr_accessor :scope_at_top_only
+
     # Construct given options that are applied via same name setters
     # on self.
     def initialize( opts = {} )
@@ -63,6 +71,8 @@ module HumanQL
       @nested_not = false
       @unconstrained_not = true
       @scope_can_constrain = true
+      @scope_at_top_only = false
+      @scope_and_only = false
       @not_scope = :invert
 
       opts.each do |name,val|
@@ -130,6 +140,12 @@ module HumanQL
             elsif outer
               return nil
             end
+          end
+          if @scope_at_top_only && ops.length > 1
+            return nil
+          end
+          if @scope_and_only && !ops.all? { |o| o == :and }
+            return nil
           end
         when :not
           args = args[0,1] if args.length > 1

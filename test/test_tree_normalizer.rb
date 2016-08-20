@@ -23,6 +23,9 @@ require 'human-ql/tree_normalizer'
 class TestTreeNormalizer < Minitest::Test
   DN = HumanQL::TreeNormalizer.new
   UN = HumanQL::TreeNormalizer.new( unconstrained_not: false )
+  LN = HumanQL::TreeNormalizer.new( unconstrained_not: false,
+                                    scope_at_top_only: true,
+                                    scope_and_only: true )
 
   A = 'a'
   B = 'b'
@@ -129,6 +132,15 @@ class TestTreeNormalizer < Minitest::Test
                                       [ :or, [ :not, B ], [ :not, C ] ] ] )
     assert_norm_identity( UN, [ :and, [ :not, A ],
                                       [ :or, [ :and, [ :not, B ], C ], D ] ] )
+  end
+
+  def test_limited_scope
+    assert_norm_identity( LN, [ S1, A ] )
+    assert_norm_identity( LN, [ :and, [ S1, A ], B ] )
+    assert_norm_identity( LN, [ :and, A, [ S1, B ] ] )
+    assert_norm( LN, B, [ :or, [ S1, A ], B ] )
+    assert_norm( LN, [ :and, B, C ],
+                     [ :and, [ :or, [ S1, A ], B ], C ] )
   end
 
 end

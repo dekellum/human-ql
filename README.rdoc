@@ -1,10 +1,31 @@
 = HumanQL
 
 * http://github.com/dekellum/human-ql
+* http://rdoc.gravitext.com/human-ql/
 
 == Description
 
-Human Query Language for full text search engines.
+Human Query Language for full text search engines. Provides a lenient
+parser and associated tools for a self-contained and search-engine
+agnostic query language suitable for use by end users. Lenient in that
+is will produce a parse tree for any input, given a default operator
+and by generally ignoring any unparsable syntax. Suitable for use by
+end users in that it supports potentially several operator variants
+and a query language not unlike some major web search and other
+commercial search engines.
+
+The main components are each highly customizable:
+
+HumanQL::QueryParser — Parses any arbitrary input string and outputs an
+Abstract Syntax Tree (AST)
+
+HumanQL::TreeNormalizer — Normalizes and imposes limits on an AST,
+e.g. avoids pathological queries.
+
+HumanQL::PostgreSQLGenerator — Given an AST, generate strings suitable
+for passing to PostgreSQL's to_tsquery function.
+
+Other generators are possible.
 
 == License
 

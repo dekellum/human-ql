@@ -18,7 +18,7 @@ module HumanQL
 
   # Human friendly, lenient query parser. Parses an arbitrary input
   # string and outputs an abstract syntax tree (AST), which uses ruby
-  # Array's as S-expressions.
+  # arrays as S-expressions.
   #
   # === Supported Syntax Summary
   #

@@ -25,6 +25,16 @@ module HumanQL
   # PostgreSQL.
   class PostgreSQLCustomParser < QueryParser
 
+    # Construct given options to set via base clase or as specified
+    # below.
+    #
+    # === Options
+    #
+    # :pg_version:: A version string ("9.5.5", "9.6.1") or integer
+    #               array ( [9,6,1]) indicating the target PostgreSQL
+    #               version. Phrase support starts in 9.6 so quoted
+    #               phrases are ignored before that.
+    #
     def initialize(opts = {})
       pg_version = opts.delete(:pg_version)
       if pg_version.is_a?( String )

@@ -23,11 +23,20 @@ require 'human-ql/postgresql_generator'
 require 'human-ql/tree_normalizer'
 
 class TestPostgresqlFuzz < Minitest::Test
-  TC = HumanQL::PostgreSQLCustomParser.new
-  DN = HumanQL::TreeNormalizer.new
-  PG = HumanQL::PostgreSQLGenerator.new
-
   DB = Sequel.connect( "postgres://localhost/human_ql_test" )
+
+  PG_VERSION =
+    begin
+      v = DB &&
+          DB["select current_setting('server_version') as v"].first[:v]
+      v &&= v.split('.').map(&:to_i)
+      v || []
+    end
+
+  TC = HumanQL::PostgreSQLCustomParser.new( pg_version: PG_VERSION )
+  DN = HumanQL::TreeNormalizer.new
+
+  PG = HumanQL::PostgreSQLGenerator.new
 
   PASSES = if $0 == __FILE__
              100

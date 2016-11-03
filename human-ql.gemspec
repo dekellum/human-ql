@@ -16,4 +16,6 @@ RJack::TarPit.specify do |s|
     s.depend 'sequel_pg', '~> 1.6.11', :dev
   end
 
+  s.required_ruby_version = '>= 1.9.1'
+  s.extra_rdoc_files |= %w[ README.rdoc History.rdoc ]
 end

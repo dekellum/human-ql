@@ -46,14 +46,12 @@ module HumanQL
 
       # Phrase support starts in 9.6
       if ( pg_version <=> [9,6] ) >= 0
-        # Extend the spaces pattern to include all known to_tsquery
-        # special characters that aren't already being handled via
-        # default QueryParser operators.
-        self.spaces = /[[:space:]*:!'<>]+/.freeze
+        @term_rejects = /[:*!'<>]/
       else
-        self.spaces = /[[:space:]*:!'"<>]+/.freeze
+        # Disable quote tokens and reject DQUOTE as token character
         self.lquote = nil
         self.rquote = nil
+        @term_rejects = /[:*!'"<>]/
       end
 
       # Use by custom #norm_phrase_tokens as a superset of the
@@ -64,7 +62,16 @@ module HumanQL
     end
 
     def norm_phrase_tokens( tokens )
-      tokens.reject { |t| @phrase_token_rejects === t }
+      tokens.
+        reject { |t| @phrase_token_rejects === t }.
+        map { |t| norm_term( t ) }
+    end
+
+    # Replace term_rejects characters with '_' which is punctuation
+    # (or effectively, whitespace) in tsquery with tested
+    # dictionaries.
+    def norm_term( t )
+      t.gsub( @term_rejects, '_' )
     end
   end
 

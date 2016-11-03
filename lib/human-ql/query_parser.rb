@@ -274,7 +274,7 @@ module HumanQL
         when @not_token
           s.push_op( :not )
         else
-          s.push_term( t )
+          s.push_term( norm_term( t ) )
         end
       end
       s.flush_tree
@@ -349,8 +349,8 @@ module HumanQL
       q.gsub(@spaces, ' ').strip
     end
 
-    # Runs the suite of norm_* functions. Returns nil if the result is
-    # empty.
+    # Runs the suite of initial input norm_* functions. Returns nil if
+    # the result is empty.
     def normalize( q )
       q ||= ''
       q = norm_infix( q )
@@ -360,10 +360,19 @@ module HumanQL
       q unless q.empty?
     end
 
-    # Select which tokens survive in a phrase. By default tokens
-    # matching #lparen and #rparen are dropped.
+    # Select which tokens survive in a phrase. Also passes each token
+    # though #norm_term. Tokens matching #lparen and #rparen are
+    # dropped.
     def norm_phrase_tokens( tokens )
-      tokens.reject { |t| @lparen === t || @rparen === t }
+      tokens.
+        reject { |t| @lparen === t || @rparen === t }.
+        map { |t| norm_term( t ) }
+    end
+
+    # No-op in this implementation but may be used to replace
+    # characters. Should not receive nor return null or empty values.
+    def norm_term( t )
+      t
     end
 
     # Internal state keeping

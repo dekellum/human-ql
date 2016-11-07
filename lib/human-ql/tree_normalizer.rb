@@ -82,7 +82,11 @@ module HumanQL
 
     # Return a new normalized AST from the given AST root node.
     def normalize( node )
-      _normalize( node, EMPTY_STACK, @unconstrained_not )
+      node = normalize_1( node, EMPTY_STACK, @unconstrained_not )
+      if ( @not_scope != true ) || @scope_and_only || @scope_at_top_only
+        node = normalize_2( node, EMPTY_STACK )
+      end
+      node
     end
 
     protected
@@ -118,7 +122,7 @@ module HumanQL
 
     private
 
-    def _normalize( node, ops, constrained )
+    def normalize_1( node, ops, constrained )
       op,*args = node
       if ! node.is_a?( Array )
         op
@@ -141,33 +145,15 @@ module HumanQL
               return nil
             end
           end
-          if @scope_at_top_only && ops.length > 1
-            return nil
-          end
-          if @scope_and_only && !ops.all? { |o| o == :and }
-            return nil
-          end
         when :not
           args = args[0,1] if args.length > 1
           return nil if !constrained || ( !@nested_not && ops.rindex(:not) )
-          if @not_scope == :invert
-            # [1] For :invert to work, we need to normalize without
-            # the :not in ops. Otherwise below not_scope [2] check
-            # would remove the scope. The other reason for the
-            # _normalize here is to collapse single arg :and, etc.
-            # before testing
-            na = _normalize( args[0], ops, constrained )
-            if na.is_a?( Array ) && na[0].is_a?( String )
-              op, na[0] = na[0], op
-              return [ op, na ]
-            end
-          end
         end
 
         a_ops = ops.dup.push( op )
         out = []
         args.each do |a|
-          a = _normalize( a, a_ops, constrained )
+          a = normalize_1( a, a_ops, constrained )
           if a.is_a?( Array ) && a[0] == op
             out += a[1..-1]
           elsif a # filter nil
@@ -179,8 +165,54 @@ module HumanQL
           out[0]
         elsif out.empty?
           nil
-        # [2] If scope still found below a :not, remove it.
-        # With :invert, this implies nodes intervening
+        else
+          out.unshift( op )
+        end
+      end
+    end
+
+    def normalize_2( node, ops )
+      op,*args = node
+      if ! node.is_a?( Array )
+        op
+      elsif args.empty?
+        nil
+      else
+        case op
+        when String #scope
+          if @scope_at_top_only && ops.length > 1
+            return nil
+          end
+          if @scope_and_only && !ops.all? { |o| o == :and }
+            return nil
+          end
+        when :not
+          if @not_scope == :invert
+            na = args[0]
+            if na.is_a?( Array ) && na[0].is_a?( String )
+              op, na[0] = na[0], op
+              return [ op, na ]
+            end
+          end
+        end
+
+        a_ops = ops.dup.push( op )
+        out = []
+        args.each do |a|
+          a = normalize_2( a, a_ops )
+          if a.is_a?( Array ) && a[0] == op
+            out += a[1..-1]
+          elsif a # filter nil
+            out << a
+          end
+        end
+
+        if ( op == :and || op == :or ) && out.length < 2
+          out[0]
+        elsif out.empty?
+          nil
+        # If scope still found below a :not, remove it. With :invert,
+        # this implies nodes intervening
         elsif @not_scope != true && op.is_a?( String ) && ops.rindex(:not)
           nil
         else

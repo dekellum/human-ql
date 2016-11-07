@@ -101,6 +101,13 @@ class TestTreeNormalizer < Minitest::Test
                      [ :and, [ :not, [ S1, A ] ], B ] )
   end
 
+  def test_not_scope_limited
+    assert_norm( LN, [ :and, A, [ S1, [ :not, B ] ] ],
+                     [ :and, A, [ :not, [ S1, B ] ] ] )
+    assert_norm( LN, [ :and, A, [ S1, [ :not, B ] ] ],
+                     [ :and, A, [ :not, [:and, [ S1, B ] ] ] ] )
+  end
+
   def test_not_scope_indirect
     assert_norm( DN, [ :not, B ],
                      [ :not, [ :or, [ S1, A ], B ] ] )

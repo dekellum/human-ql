@@ -35,6 +35,7 @@ module HumanQL
     #               phrases are ignored before that.
     #
     def initialize(opts = {})
+      opts = opts.dup
       pg_version = opts.delete(:pg_version)
       if pg_version.is_a?( String )
         pg_version = pg_version.split( '.' ).map( &:to_i )

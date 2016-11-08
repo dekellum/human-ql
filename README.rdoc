@@ -22,6 +22,9 @@ Abstract Syntax Tree (AST)
 HumanQL::TreeNormalizer — Normalizes and imposes limits on an AST,
 e.g. avoids pathological queries.
 
+HumanQL::QueryGenerator — Given an AST, generates a Human Query
+Language string.
+
 HumanQL::PostgreSQLGenerator — Given an AST, generate strings suitable
 for passing to PostgreSQL's to_tsquery function.
 

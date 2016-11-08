@@ -6,10 +6,12 @@ lib/human-ql/base.rb
 lib/human-ql.rb
 lib/human-ql/postgresql_custom_parser.rb
 lib/human-ql/postgresql_generator.rb
+lib/human-ql/query_generator.rb
 lib/human-ql/query_parser.rb
 lib/human-ql/tree_normalizer.rb
 test/setup.rb
 test/test_postgresql_fuzz.rb
 test/test_postgresql_generator.rb
+test/test_query_generator.rb
 test/test_query_parser.rb
 test/test_tree_normalizer.rb

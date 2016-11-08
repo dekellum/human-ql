@@ -14,6 +14,18 @@ end users in that it supports potentially several operator variants
 and a query language not unlike some major web search and other
 commercial search engines.
 
+The query language supports the following features at a high level:
+
+* Boolean operators: AND (infix), OR (infix), NOT (prefix) with an
+  implied default operator and precedence rules,
+  e.g. "boy or girl -infant"
+
+* Optional parenthesis for explicitly denoting precedence.
+
+* Quoted phrases (for proximity matching)
+
+* Declarable prefix scopes, e.g. "TITLE:(car or bike)"
+
 The main components are each highly customizable:
 
 HumanQL::QueryParser — Parses any arbitrary input string and outputs an

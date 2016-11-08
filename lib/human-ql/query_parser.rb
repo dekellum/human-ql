@@ -87,11 +87,12 @@ module HumanQL
     # Default: :and
     attr_accessor :default_op
 
-    # Hash of operators to precendence Integer value.  The hash should
-    # also provide a default for unlisted operators like any supportes
-    # copes. To limit human surprise, the #default_op should be lowest.
-    # The default is as per DEFAULT_PRECEDENCE with a default value of
-    # 10, thus :not has the highest precedence at 11.
+    # Hash of operators to precedence Integer value.  The hash should
+    # also provide a default value for unlisted operators like any
+    # supported scopes. To limit human surprise, the #default_op
+    # should have the lowest precedence.  The default is as per
+    # DEFAULT_PRECEDENCE with a default value of 10, thus :not has the
+    # highest precedence at 11.
     attr_accessor :precedence
 
     # Pattern matching one or more characters to treat as white-space
@@ -194,8 +195,8 @@ module HumanQL
     # Default: false
     attr_accessor :verbose
 
-    # Construct given options which are attribute names to
-    # set.
+    # Construct given options which are interpreted as attribute names
+    # to set.
     def initialize( opts = {} )
       @default_op = :and
 
@@ -209,8 +210,7 @@ module HumanQL
       @or_token  = /\A(OR|\|)\z/i.freeze
       @and_token = /\A(AND|\&)\z/i.freeze
       @not_token = /\A(NOT|\-)\z/i.freeze
-      @lquote = '"'.freeze
-      @rquote = '"'.freeze
+      @lquote = @rquote = '"'.freeze
       @lparen = '('.freeze
       @rparen = ')'.freeze
 

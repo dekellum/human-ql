@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# coding: utf-8
 
 #--
 # Copyright (c) 2016 David Kellum
@@ -82,7 +83,7 @@ class TestPostgresqlGenerator < Minitest::Test
 
   def test_phrase_with_danger
     skip( "For postgresql 9.6+" ) unless pg_gte_9_6?
-    assert_gen( '_ <-> boy', '": boy"' )
+    assert_gen( 'boy', '": boy"' )
     assert_tsq( "'boy'", '": boy"' )
   end
 
@@ -147,10 +148,9 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_funk_1
-    assert_gen( "!(, & _y)", "-( , 'y -)" )
+    assert_gen( "!(, & ’y)", "-( , 'y -)" )
     assert_tsq( "!'y'",     "-( ,'y -)" )
-
-    assert_gen( "!(, & _y) & c3", "|-( , 'y -)c3" )
+    assert_gen( "!(, & ’y) & c3", "|-( , 'y -)c3" )
     assert_tsq( "!'y' & 'c3'", "|-( ,'y -)c3" )
   end
 

@@ -1,3 +1,5 @@
+# coding: utf-8
+
 #--
 # Copyright (c) 2016 David Kellum
 #
@@ -19,10 +21,16 @@ require 'human-ql/query_parser'
 module HumanQL
 
   # Extends the generic QueryParser with additional special character
-  # filtering so as to avoid syntax errors in PostgreSQL to_tsquery()
-  # for any known input.  Note that this is still a parser for the
-  # HumanQL query language, not anything implemented in PostgreSQL.
+  # and token filtering so as to avoid syntax errors with to_tsquery()
+  # (via PostgreSQLGenerator) for any known input.  Note that this is
+  # still a parser for the HumanQL query language, not anything
+  # implemented in PostgreSQL.
   class PostgreSQLCustomParser < QueryParser
+
+    # U+2019 RIGHT SINGLE QUOTATION MARK
+    RSQMARK = '’'.freeze
+
+    UNDERSCORE = '_'.freeze
 
     # Construct given options to set via base clase or as specified
     # below.
@@ -32,7 +40,7 @@ module HumanQL
     # :pg_version:: A version string ("9.5.5", "9.6.1") or integer
     #               array ( [9,6,1]) indicating the target PostgreSQL
     #               version. Phrase support starts in 9.6 so quoted
-    #               phrases are ignored before that.
+    #               phrases are ignored before that. Default: < 9.6
     #
     def initialize(opts = {})
       opts = opts.dup
@@ -46,21 +54,45 @@ module HumanQL
 
       # Phrase support starts in 9.6
       if ( pg_version <=> [9,6] ) >= 0
-        @term_rejects = /[()|&:*!'<>]/
+        # Handle what PG-sensitive chracters we can early as
+        # whitespace. This can't include anything anything part of
+        # HumanQL, e.g. ':' as used for scopes, so deal with the
+        # remainder below.
+        self.spaces = /[[:space:]*!<>]+/.freeze
       else
-        # Disable quote tokens and reject DQUOTE as token character
+        # Disable quote tokens
         self.lquote = nil
         self.rquote = nil
-        @term_rejects = /[()|&:*!'"<>]/
+        # As above but add DQUOTE as well.
+        self.spaces = /[[:space:]*!<>"]+/.freeze
       end
 
+      # Use by custom #norm_phrase_tokens as a superset of the
+      # #lparen, #rparen token patterns removed by default.  In
+      # PostgreSQL proximity expressions for phrases, the '|' and '&'
+      # still need to be filtered. Other standalone punctuation tokens
+      # are best removed entirely
+      @phrase_token_rejects = /\A[()|&':]\z/.freeze
+
+      # SQUOTE is a problem only when at beginning of term.
+      @lead_squote = /\A'/.freeze
+
+      # COLON is always a problem, but since its also part of Human QL
+      # (scopes) it can't be included earlier in #spaces. Also per
+      # scope parsing rules, its not always made a separate token.
+      @term_rejects = /:/.freeze
     end
 
-    # Replace term_rejects characters with '_' which is punctuation
-    # (or effectively, whitespace) in tsquery with tested
-    # dictionaries.
+    def norm_phrase_tokens( tokens )
+      tokens.
+        reject { |t| @phrase_token_rejects === t }.
+        map { |t| norm_term( t ) }
+    end
+
+    # Replace various problem single characters with alt. characters.
     def norm_term( t )
-      t.gsub( @term_rejects, '_' )
+      t.sub( @lead_squote, RSQMARK ).
+        gsub( @term_rejects, UNDERSCORE )
     end
   end
 

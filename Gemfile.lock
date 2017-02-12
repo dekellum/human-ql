@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    human-ql (1.0.0)
+    human-ql (1.0.1)
 
 GEM
   remote: https://rubygems.org/

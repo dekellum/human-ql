@@ -155,7 +155,9 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_funk_2
-    if pg_gte_9_6?
+    if ( PG_VERSION <=> [9,6,2] ) >= 0
+      assert_tsq( "!!'boy' & 'cat'", "-(a -boy) & cat" )
+    elsif pg_gte_9_6?
       # Crashes PG 9.6 beta 1-2, fixed in beta 3.
       assert_tsq( "'boy' & 'cat'", "-(a -boy) & cat" )
     else

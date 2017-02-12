@@ -55,9 +55,9 @@ module HumanQL
       # Phrase support starts in 9.6
       if ( pg_version <=> [9,6] ) >= 0
         # Handle what PG-sensitive chracters we can early as
-        # whitespace. This can't include anything anything part of
-        # HumanQL, e.g. ':' as used for scopes, so deal with the
-        # remainder below.
+        # whitespace. This can't include anything part of HumanQL,
+        # e.g. ':' as used for scopes, so deal with the remainder
+        # below.
         self.spaces = /[[:space:]*!<>]+/.freeze
       else
         # Disable quote tokens
@@ -69,9 +69,8 @@ module HumanQL
 
       # Use by custom #norm_phrase_tokens as a superset of the
       # #lparen, #rparen token patterns removed by default.  In
-      # PostgreSQL proximity expressions for phrases, the '|' and '&'
-      # still need to be filtered. Other standalone punctuation tokens
-      # are best removed entirely
+      # PostgreSQL, the '|' and '&' still need to be filtered. Other
+      # freestanding punctuation tokens are best removed entirely.
       @phrase_token_rejects = /\A[()|&':]\z/.freeze
 
       # SQUOTE is a problem only when at beginning of term.

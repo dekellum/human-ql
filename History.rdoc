@@ -1,4 +1,11 @@
-=== 1.0.1 (TBD)
+=== 1.0.1 (2017-3-21)
+
+* Drop more tokens, keep more characters in PostgreSQLCustomParser,
+  which originally treated more of the PG special (unsafe) characters
+  as whitespace. A result of these changes is that its less likely to
+  see replacement characters in generated output.
+
+* Account for Postgresql 9.6.2 change in tests
 
 === 1.0.0 (2016-11-8)
 * Initial release.

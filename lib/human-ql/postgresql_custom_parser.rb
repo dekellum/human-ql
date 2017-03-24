@@ -58,13 +58,13 @@ module HumanQL
         # whitespace. This can't include anything part of HumanQL,
         # e.g. ':' as used for scopes, so deal with the remainder
         # below.
-        self.spaces = /[[:space:]*!<>\\]+/.freeze
+        self.spaces = /[[:space:]*!<>\0\\]+/.freeze
       else
         # Disable quote tokens
         self.lquote = nil
         self.rquote = nil
         # As above but add DQUOTE as well.
-        self.spaces = /[[:space:]*!<>\\"]+/.freeze
+        self.spaces = /[[:space:]*!<>\0\\"]+/.freeze
       end
 
       # Use by custom #norm_phrase_tokens as a superset of the

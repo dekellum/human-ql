@@ -1,3 +1,5 @@
+=== 1.0.2 (TBD)
+
 === 1.0.1 (2017-3-21)
 
 * Drop more tokens, keep more characters in PostgreSQLCustomParser,

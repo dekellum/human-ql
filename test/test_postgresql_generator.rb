@@ -61,6 +61,22 @@ class TestPostgresqlGenerator < Minitest::Test
     end
   end
 
+  def assert_tsq_match( tsq, text )
+    if DB
+      rt = DB[ "select to_tsvector(?) @@ to_tsquery(?) as m",
+               text, tsq ].first[ :m ]
+      assert_equal( true, rt )
+    end
+  end
+
+  def refute_tsq_match( tsq, text )
+    if DB
+      rt = DB[ "select to_tsvector(?) @@ to_tsquery(?) as m",
+               text, tsq ].first[ :m ]
+      assert_equal( false, rt )
+    end
+  end
+
   def test_gen_term
     assert_gen( 'ape', 'ape' )
     assert_tsq( "'ape'", 'ape' )
@@ -85,6 +101,51 @@ class TestPostgresqlGenerator < Minitest::Test
     skip( "For postgresql 9.6+" ) unless pg_gte_9_6?
     assert_gen( 'boy', '": boy"' )
     assert_tsq( "'boy'", '": boy"' )
+  end
+
+  def test_phrase_or
+    skip( "For postgresql 9.6+" ) unless pg_gte_9_6?
+    # '<->' has precendence over '|'
+    assert_gen( "(ape <-> boy | dog <-> girl)",
+                '"ape boy" or "dog girl"' )
+
+    assert_tsq( tsq = "'ape' <-> 'boy' | 'dog' <-> 'girl'",
+                '"ape boy" or "dog girl"' )
+
+    refute_tsq_match( tsq, 'boy girl', )
+    refute_tsq_match( tsq, 'girl dog', )
+
+    assert_tsq_match( tsq, 'ape boy', )
+    assert_tsq_match( tsq, 'ape boy cat', )
+    assert_tsq_match( tsq, 'dog girl', )
+    assert_tsq_match( tsq, 'ape dog girl', )
+  end
+
+  def test_phrase_stopword
+    assert_tsq( tsq = "'cat' <2> 'dog'", '"cat _ dog"' )
+
+    assert_tsq_match( tsq, 'cat goose dog' )
+
+    # '<2>' is exact, not up to...
+    refute_tsq_match( tsq, 'cat dog', )
+    refute_tsq_match( tsq, 'cat girl goose dog', )
+
+    # to_tsvector('cat a dog') -> 'cat':1 'dog':3
+    # to_tsvector('cat _ dog') -> 'cat':1 'dog':2
+
+    assert_tsq_match( tsq, 'cat a dog', )
+    refute_tsq_match( tsq, 'cat _ dog', )
+  end
+
+  def test_phrase_apostrophe
+    # As of 9.6.2 this phrase won't match itself.
+    assert_gen( "cat's <-> rat", %{"cat's rat"} )
+    assert_tsq( tsq = "'cat' <-> 'rat'", %{"cat's rat"} )
+
+    assert_tsq_match( tsq, "cat rat", )
+
+    # to_tsvector('cat''s rat') -> 'cat':1 'rat':3
+    refute_tsq_match( tsq, "cat's rat", )
   end
 
   def test_gen_empty

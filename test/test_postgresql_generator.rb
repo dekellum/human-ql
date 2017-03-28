@@ -138,6 +138,8 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_phrase_apostrophe
+    skip( "For postgresql 9.6+" ) unless pg_gte_9_6?
+
     # As of 9.6.2 this phrase won't match itself.
     assert_gen( "cat's <-> rat", %{"cat's rat"} )
     assert_tsq( tsq = "'cat' <-> 'rat'", %{"cat's rat"} )
@@ -149,6 +151,7 @@ class TestPostgresqlGenerator < Minitest::Test
   end
 
   def test_phrase_and
+    skip( "For postgresql 9.6+" ) unless pg_gte_9_6?
     assert_gen( "johnson <-> johnson", '"johnson & johnson"' )
     assert_tsq( tsq = "'johnson' <-> 'johnson'", '"johnson & johnson"' )
 

@@ -1,5 +1,13 @@
 === 1.0.2 (TBD)
 
+* HumanQL::PostgreSQLCustomParser now treats backslashes and embedded
+  nulls as whitespace since these characters were found to be
+  significant to the PG tsquery parser.
+
+* Additional phrase and text match tests in TestPostgreSQLGenerator.
+
+* Travis CI config including PostgreSQL 9.6
+
 === 1.0.1 (2017-3-21)
 
 * Drop more tokens, keep more characters in PostgreSQLCustomParser,

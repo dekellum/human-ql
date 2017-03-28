@@ -148,6 +148,17 @@ class TestPostgresqlGenerator < Minitest::Test
     refute_tsq_match( tsq, "cat's rat", )
   end
 
+  def test_phrase_and
+    assert_gen( "johnson <-> johnson", '"johnson & johnson"' )
+    assert_tsq( tsq = "'johnson' <-> 'johnson'", '"johnson & johnson"' )
+
+    # to_tsvector('johnson & johnson') -> 'johnson':1,2
+    assert_tsq_match( tsq, "Johnson & Johnson", )
+
+    # to_tsvector('Johnson A Johnson') -> 'johnson':1,3
+    refute_tsq_match( tsq, "Johnson A Johnson", )
+  end
+
   def test_gen_empty
     assert_gen( nil, '' )
   end

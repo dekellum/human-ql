@@ -2,6 +2,7 @@
 
 * http://github.com/dekellum/human-ql
 * http://rdoc.gravitext.com/human-ql/
+* {<img src="https://travis-ci.org/dekellum/human-ql.svg?branch=dev" />}[https://travis-ci.org/dekellum/human-ql]
 
 == Description
 

@@ -2,6 +2,13 @@ language: ruby
 before_install: "gem install rjack-tarpit -v=2.1.1"
 install: "bundle install --jobs=3 --retry=3"
 sudo: false
+services:
+  - postgresql
+addons:
+  postgresql: "9.6"
+before_script:
+  - psql -c "CREATE DATABASE human_ql_test;" -U postgres
+  - psql -c "ALTER DATABASE human_ql_test SET default_text_search_config = 'pg_catalog.english';" -U postgres
 rvm:
   - 2.2.6
   - 2.3.3

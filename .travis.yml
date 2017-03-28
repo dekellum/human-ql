@@ -1,0 +1,16 @@
+language: ruby
+before_install: "gem install rjack-tarpit -v=2.1.1"
+sudo: false
+rvm:
+  - 2.2.7
+  - 2.3.3
+  - ruby-head
+  - rbx
+  - jruby-1.7.26
+  - jruby-9.1.8.0
+  - jruby-head
+matrix:
+  allow_failures:
+    - rvm: ruby-head
+    - rvm: rbx
+    - rvm: jruby-head

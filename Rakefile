@@ -12,3 +12,10 @@ task :publish_rdoc => [ :clean, :rerdoc ] do
     aws s3 sync --acl public-read doc/ s3://rdoc.gravitext.com/human-ql/
   SH
 end
+
+task :rdoc do
+  sh <<-SH
+    rm -rf doc/fonts
+    cp rdoc_css/*.css doc/css/
+  SH
+end

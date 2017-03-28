@@ -8,6 +8,7 @@ RJack::TarPit.specify do |s|
   s.add_developer( 'David Kellum', 'dek-oss@gravitext.com' )
 
   s.depend 'minitest', '~> 5.8.4', :dev
+  s.depend 'rdoc',     '~> 4.3.0', :dev
 
   unless RUBY_PLATFORM =~ /java/
     # Testing

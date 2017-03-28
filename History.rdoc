@@ -1,4 +1,4 @@
-=== 1.0.2 (TBD)
+=== 1.0.2 (2017-3-28)
 
 * HumanQL::PostgreSQLCustomParser now treats backslashes and embedded
   nulls as whitespace since these characters were found to be

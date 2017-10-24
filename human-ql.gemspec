@@ -12,9 +12,9 @@ RJack::TarPit.specify do |s|
 
   unless RUBY_PLATFORM =~ /java/
     # Testing
-    s.depend 'sequel',    '~> 4.36',   :dev
-    s.depend 'pg',        '~> 0.18.1', :dev
-    s.depend 'sequel_pg', '~> 1.6.11', :dev
+    s.depend 'sequel',    '~> 4.36', :dev
+    s.depend 'pg',        '~> 0.20', :dev
+    s.depend 'sequel_pg', '~> 1.6',  :dev
   end
 
   s.required_ruby_version = '>= 1.9.1'

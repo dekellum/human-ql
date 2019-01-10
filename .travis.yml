@@ -11,15 +11,11 @@ before_script:
   - psql -c "CREATE DATABASE human_ql_test;" -U postgres
   - psql -c "ALTER DATABASE human_ql_test SET default_text_search_config = 'pg_catalog.english';" -U postgres
 rvm:
-  - 2.2.8
-  - 2.3.5
+  - 2.3.8
+  - 2.5.3
   - ruby-head
-  - rbx
-  - jruby-1.7.27
-  - jruby-9.1.13.0
-  - jruby-head
+  - jruby-9.1.17.0
+  - jruby-9.2.5.0
 matrix:
   allow_failures:
     - rvm: ruby-head
-    - rvm: rbx
-    - rvm: jruby-head

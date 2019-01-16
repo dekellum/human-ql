@@ -13,6 +13,7 @@ before_script:
   - psql -c "ALTER DATABASE human_ql_test SET default_text_search_config = 'pg_catalog.english';" -U postgres
 rvm:
   - 2.3.8
+  - 2.4.5
   - 2.5.3
   - ruby-head
   - jruby-9.1.17.0

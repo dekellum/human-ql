@@ -46,7 +46,11 @@ class TestPostgresqlGenerator < Minitest::Test
   def assert_gen( expected_pg, hq )
     ast = TC.parse( hq )
     pg = PG.generate( ast )
-    assert_equal( expected_pg, pg, ast )
+    if expected_pg.nil?
+      assert_nil( pg, ast )
+    else
+      assert_equal( expected_pg, pg, ast )
+    end
   end
 
   # Assert that the round-trip representation via PG

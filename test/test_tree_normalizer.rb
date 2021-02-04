@@ -38,7 +38,11 @@ class TestTreeNormalizer < Minitest::Test
 
   def assert_norm( normalizer, expected, input )
     output = normalizer.normalize( input )
-    assert_equal( expected, output, input )
+    if expected.nil?
+      assert_nil(output, input)
+    else
+      assert_equal( expected, output, input )
+    end
   end
 
   def assert_norm_identity( normalizer, id )

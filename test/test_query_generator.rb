@@ -33,7 +33,11 @@ class TestQueryGenerator < Minitest::Test
 
   def assert_gen( expected, ast )
     out = QG.generate( ast )
-    assert_equal( expected, out, ast )
+    if expected.nil?
+      assert_nil(out, ast)
+    else
+      assert_equal( expected, out, ast )
+    end
   end
 
   def test_empty

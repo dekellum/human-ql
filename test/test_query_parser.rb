@@ -94,9 +94,9 @@ class TestQueryParser < Minitest::Test
   end
 
   def test_normalize
-    assert_equal( nil, TC.normalize( nil ) )
-    assert_equal( nil, TC.normalize( '' ) )
-    assert_equal( nil, TC.normalize( ' ' ) )
+    assert_nil( TC.normalize( nil ) )
+    assert_nil( TC.normalize( '' ) )
+    assert_nil( TC.normalize( ' ' ) )
     assert_equal( 'a ( bc | d )', TC.normalize( 'a (bc|d)' ) )
     assert_equal( '- ( a | b )',  TC.normalize( '-(a|b)' ) )
   end
@@ -111,7 +111,11 @@ class TestQueryParser < Minitest::Test
   def assert_parse( expected_tree, input )
     out = TC.parse( input )
     out = DN.normalize( out )
-    assert_equal( expected_tree, out, input )
+    if expected_tree.nil?
+      assert_nil(out, input)
+    else
+      assert_equal( expected_tree, out, input )
+    end
   end
 
   def test_parse_basic_1

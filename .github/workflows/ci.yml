@@ -25,6 +25,6 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
     - run: bundle install --retry 3
-    - run: psql -c "CREATE DATABASE human_ql_test;" -U postgres
-    - run: psql -c "ALTER DATABASE human_ql_test SET default_text_search_config = 'pg_catalog.english';" -U postgres
+    - run: psql -h localhost -c "CREATE DATABASE human_ql_test;" -U postgres
+    - run: psql -h localhost -c "ALTER DATABASE human_ql_test SET default_text_search_config = 'pg_catalog.english';" -U postgres
     - run: bundle exec rake test

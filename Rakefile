@@ -23,7 +23,7 @@ end
 desc "Upload RDOC to Amazon S3 (rdoc.gravitext.com/human-ql, Oregon)"
 task :publish_rdoc => [:clean, :rdoc] do
   sh <<-SH
-    aws s3 sync --acl public-read html/ s3://rdoc.gravitext.com/human-ql/
+    aws s3 sync --acl public-read doc/ s3://rdoc.gravitext.com/human-ql/
   SH
 end
 

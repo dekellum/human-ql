@@ -2,7 +2,7 @@
 
 * http://github.com/dekellum/human-ql
 * http://rdoc.gravitext.com/human-ql/
-* {<img src="https://travis-ci.org/dekellum/human-ql.svg?branch=dev" />}[https://travis-ci.org/dekellum/human-ql]
+* {<img src="https://github.com/dekellum/human-ql/workflows/CI/badge.svg?branch=dev" />}[https://github.com/dekellum/human-ql/actions?query=workflow%3ACI]
 
 == Description
 

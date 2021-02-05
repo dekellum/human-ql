@@ -1,0 +1,30 @@
+name: CI
+on:
+  pull_request:
+  push:
+#  schedule:
+#    - cron: '53 15 * * 1,4'
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:12.5
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: [ 2.3, 2.4, 2.5, 2.6, jruby-9.1.17.0, jruby-9.2.13.0 ]
+    name: ${{ matrix.ruby }}
+    steps:
+    - uses: actions/checkout@v2
+    - run: sudo apt-get -yqq install libpq-dev
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true
+    - run: psql -c "CREATE DATABASE human_ql_test;" -U postgres
+    - run: psql -c "ALTER DATABASE human_ql_test SET default_text_search_config = 'pg_catalog.english';" -U postgres
+    - run: bundle exec rake test

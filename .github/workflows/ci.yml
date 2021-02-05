@@ -28,3 +28,5 @@ jobs:
     - run: psql -h localhost -c "CREATE DATABASE human_ql_test;" -U postgres
     - run: psql -h localhost -c "ALTER DATABASE human_ql_test SET default_text_search_config = 'pg_catalog.english';" -U postgres
     - run: rake test
+      env:
+        PGUSER: postgres

@@ -38,22 +38,22 @@ module HumanQL
     # === Options
     #
     # :pg_version:: A version string ("9.5.5", "9.6.1") or integer
-    #               array ( [9,6,1]) indicating the target PostgreSQL
+    #               array ([9,6,1]) indicating the target PostgreSQL
     #               version. Phrase support starts in 9.6 so quoted
     #               phrases are ignored before that. Default: < 9.6
     #
     def initialize(opts = {})
       opts = opts.dup
       pg_version = opts.delete(:pg_version)
-      if pg_version.is_a?( String )
-        pg_version = pg_version.split( '.' ).map( &:to_i )
+      if pg_version.is_a?(String)
+        pg_version = pg_version.split('.').map(&:to_i)
       end
       pg_version ||= []
 
       super
 
       # Phrase support starts in 9.6
-      if ( pg_version <=> [9,6] ) >= 0
+      if (pg_version <=> [9,6]) >= 0
         # Handle what PG-sensitive chracters we can early as
         # whitespace. This can't include anything part of HumanQL,
         # e.g. ':' as used for scopes, so deal with the remainder
@@ -82,16 +82,16 @@ module HumanQL
       @term_rejects = /:/.freeze
     end
 
-    def norm_phrase_tokens( tokens )
+    def norm_phrase_tokens(tokens)
       tokens.
         reject { |t| @phrase_token_rejects === t }.
-        map { |t| norm_term( t ) }
+        map { |t| norm_term(t) }
     end
 
     # Replace various problem single characters with alt. characters.
-    def norm_term( t )
-      t.sub( @lead_squote, RSQMARK ).
-        gsub( @term_rejects, UNDERSCORE )
+    def norm_term(t)
+      t.sub(@lead_squote, RSQMARK).
+        gsub(@term_rejects, UNDERSCORE)
     end
   end
 

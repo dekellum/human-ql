@@ -70,14 +70,14 @@ module HumanQL
 
     # Set #default_op and #precedence from the given QueryParser, as a
     # convenience.
-    def parser=( p )
+    def parser=(p)
       @default_op = p.default_op
       @precedence = p.precedence
     end
 
     # Construct given options which are interpreted as attribute names
     # to set.
-    def initialize( opts = {} )
+    def initialize(opts = {})
       @and = ' and '.freeze
       @or = ' or '.freeze
       @not = '-'.freeze
@@ -90,30 +90,30 @@ module HumanQL
       @precedence = nil
 
       opts.each do |name,val|
-        send( name.to_s + '=', val )
+        send(name.to_s + '=', val)
       end
     end
 
     # Given the root node of the AST, return a String in Human Query
     # Language syntax.
-    def generate( node )
+    def generate(node)
       op,*args = node
-      if ! node.is_a?( Array )
+      if ! node.is_a?(Array)
         op
       elsif args.empty?
         nil
       else
         case op
         when :and
-          terms_join( args, :and )
+          terms_join(args, :and)
         when :or
-          terms_join( args, :or )
+          terms_join(args, :or)
         when :not
-          @not + pwrap_gen( args[0], op )
+          @not + pwrap_gen(args[0], op)
         when :phrase
-          @lquote + args.join( @space ) + @rquote
+          @lquote + args.join(@space) + @rquote
         when String
-          op + @colon + pwrap_gen( args[0], op )
+          op + @colon + pwrap_gen(args[0], op)
         else
           raise "Unsupported op: #{node.inspect}"
         end
@@ -122,35 +122,35 @@ module HumanQL
 
     protected
 
-    def terms_join( args, op )
-      args = args.map { |a| pwrap_gen( a, op ) }
+    def terms_join(args, op)
+      args = args.map { |a| pwrap_gen(a, op) }
       if op == @default_op
-        args.join( @space )
+        args.join(@space)
       elsif op == :and
-        args.join( @and )
+        args.join(@and)
       elsif op == :or
-        args.join( @or )
+        args.join(@or)
       end
     end
 
-    def pwrap_gen( node, parent_op )
-      if node.is_a?( Array )
+    def pwrap_gen(node, parent_op)
+      if node.is_a?(Array)
         op = node[0]
-        if precedence_lte?( parent_op, op )
-          generate( node )
+        if precedence_lte?(parent_op, op)
+          generate(node)
         else
-          pwrap( generate( node ) )
+          pwrap(generate(node))
         end
       else
         node
       end
     end
 
-    def pwrap( inner )
+    def pwrap(inner)
       @lparen + inner + @rparen
     end
 
-    def precedence_lte?( op1, op2 )
+    def precedence_lte?(op1, op2)
       if @precedence
         @precedence[op1] <= @precedence[op2]
       else

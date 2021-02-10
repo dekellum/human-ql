@@ -150,23 +150,23 @@ module HumanQL
     #
     # :ignorecase:: If true, generate case insensitive regexes and
     #               upcase the scope in AST output (per #scope_upcase)
-    def scopes=( scopes )
-      scopes = Array( scopes )
-      opts = scopes.last.is_a?( Hash ) && scopes.pop || {}
+    def scopes=(scopes)
+      scopes = Array(scopes)
+      opts = scopes.last.is_a?(Hash) && scopes.pop || {}
       ignorecase = !!(opts[:ignorecase])
       if scopes.empty?
         @scope = nil
         @scope_token = nil
       elsif scopes.length == 1 && !ignorecase
         s = scopes.first
-        @scope = ( s + ':' ).freeze
+        @scope = (s + ':').freeze
         @scope_token = /((?<=\A|#{SP})(#{s}))?#{SP}*:/.freeze
       else
         opts = ignorecase ? Regexp::IGNORECASE : nil
-        s = Regexp.union( *scopes ).source
-        @scope = Regexp.new( '\A(' + s + '):\z', opts ).freeze
-        @scope_token = Regexp.new( "((?<=\\A|#{SP})(#{s}))?#{SP}*:",
-                                   opts ).freeze
+        s = Regexp.union(*scopes).source
+        @scope = Regexp.new('\A(' + s + '):\z', opts).freeze
+        @scope_token = Regexp.new("((?<=\\A|#{SP})(#{s}))?#{SP}*:",
+                                   opts).freeze
       end
       @scope_upcase = ignorecase
       nil
@@ -197,11 +197,11 @@ module HumanQL
 
     # Construct given options which are interpreted as attribute names
     # to set.
-    def initialize( opts = {} )
+    def initialize(opts = {})
       @default_op = :and
 
       @precedence = Hash.new(10)
-      @precedence.merge!( DEFAULT_PRECEDENCE )
+      @precedence.merge!(DEFAULT_PRECEDENCE)
       @precedence.freeze
 
       @spaces = SPACES
@@ -221,44 +221,44 @@ module HumanQL
       @verbose = false
 
       opts.each do |name,val|
-        send( name.to_s + '=', val )
+        send(name.to_s + '=', val)
       end
     end
 
-    def parse( q )
+    def parse(q)
       unless @default_op == :and || @default_op == :or
-        raise( "QueryParser#default_op is (#{@default_op.inspect}) " +
-               "(should be :and or :or)" )
+        raise("QueryParser#default_op is (#{@default_op.inspect}) " +
+               "(should be :and or :or)")
       end
-      q = normalize( q )
+      q = normalize(q)
       tokens = q ? q.split(' ') : []
-      log { "Parse: " + tokens.join( ' ' ) }
-      ast = parse_tree( tokens )
+      log { "Parse: " + tokens.join(' ') }
+      ast = parse_tree(tokens)
       log { "AST: " + ast.inspect }
       ast
     end
 
-    def log( l = nil )
+    def log(l = nil)
       if @verbose
         l = yield if block_given?
-        $stderr.puts( l )
+        $stderr.puts(l)
       end
     end
 
-    def parse_tree( tokens )
-      s = ParseState.new( self )
-      while ( t = tokens.shift )
+    def parse_tree(tokens)
+      s = ParseState.new(self)
+      while (t = tokens.shift)
         case t
         when @lquote
           rqi = tokens.index { |tt| @rquote === tt }
           if rqi
-            s.push_term( [ :phrase, *norm_phrase_tokens(tokens[0...rqi]) ] )
+            s.push_term([ :phrase, *norm_phrase_tokens(tokens[0...rqi]) ])
             tokens = tokens[rqi+1..-1]
           end # else ignore
         when @lparen
-          rpi = rparen_index( tokens )
+          rpi = rparen_index(tokens)
           if rpi
-            s.push_term( parse_tree( tokens[0...rpi] ) )
+            s.push_term(parse_tree(tokens[0...rpi]))
             tokens = tokens[rpi+1..-1]
           end # else ignore
         when @rquote
@@ -266,15 +266,15 @@ module HumanQL
         when @rparen
         #ignore
         when @scope
-          s.push_op( scope_op( t ) )
+          s.push_op(scope_op(t))
         when @or_token
-          s.push_op( :or )
+          s.push_op(:or)
         when @and_token
-          s.push_op( :and )
+          s.push_op(:and)
         when @not_token
-          s.push_op( :not )
+          s.push_op(:not)
         else
-          s.push_term( norm_term( t ) )
+          s.push_term(norm_term(t))
         end
       end
       s.flush_tree
@@ -282,14 +282,14 @@ module HumanQL
 
     # Given scope token, return the name (minus trailing ':'),
     # upcased if #scope_upcase.
-    def scope_op( token )
+    def scope_op(token)
       t = token[0...-1]
       t.upcase! if @scope_upcase
       t
     end
 
     # Find token matching #rparen in remaining tokens.
-    def rparen_index( tokens )
+    def rparen_index(tokens)
       li = 1
       phrase = false
       tokens.index do |tt|
@@ -312,14 +312,14 @@ module HumanQL
     # Treat various punctuation form operators as _always_ being
     # seperate tokens per #infix_token pattern.
     # Note: Must always call norm_space _after_ this
-    def norm_infix( q )
-      q.gsub( @infix_token, ' \0 ' )
+    def norm_infix(q)
+      q.gsub(@infix_token, ' \0 ')
     end
 
     # Split prefixes as seperate tokens per #prefix_token pattern
-    def norm_prefix( q )
+    def norm_prefix(q)
       if @prefix_token
-        q.gsub( @prefix_token, '\0 ' )
+        q.gsub(@prefix_token, '\0 ')
       else
         q
       end
@@ -329,9 +329,9 @@ module HumanQL
     # 'SCOPE:' tokens.
     # This expects the 2nd capture group of #scope_token to be the
     # actual matching scope name, if present.
-    def norm_scope( q )
+    def norm_scope(q)
       if @scope_token
-        q.gsub( @scope_token ) do
+        q.gsub(@scope_token) do
           if $2
             $2 + ': '
           else
@@ -345,40 +345,40 @@ module HumanQL
 
     # Normalize any whitespace to a single ASCII space character and
     # strip leading/trailing whitepsace.
-    def norm_space( q )
+    def norm_space(q)
       q.gsub(@spaces, ' ').strip
     end
 
     # Runs the suite of initial input norm_* functions. Returns nil if
     # the result is empty.
-    def normalize( q )
+    def normalize(q)
       q ||= ''
-      q = norm_infix( q )
-      q = norm_scope( q )
-      q = norm_prefix( q )
-      q = norm_space( q )
+      q = norm_infix(q)
+      q = norm_scope(q)
+      q = norm_prefix(q)
+      q = norm_space(q)
       q unless q.empty?
     end
 
     # Select which tokens survive in a phrase. Also passes each token
     # though #norm_term. Tokens matching #lparen and #rparen are
     # dropped.
-    def norm_phrase_tokens( tokens )
+    def norm_phrase_tokens(tokens)
       tokens.
         reject { |t| @lparen === t || @rparen === t }.
-        map { |t| norm_term( t ) }
+        map { |t| norm_term(t) }
     end
 
     # No-op in this implementation but may be used to replace
     # characters. Should not receive nor return null or empty values.
-    def norm_term( t )
+    def norm_term(t)
       t
     end
 
     # Internal state keeping
     class ParseState # :nodoc:
 
-      def initialize( parser )
+      def initialize(parser)
         @default_op = parser.default_op
         @precedence = parser.precedence
         @verbose = parser.verbose
@@ -389,25 +389,25 @@ module HumanQL
         @last_term = -1
       end
 
-      def log( l = nil )
+      def log(l = nil)
         if @verbose
           l = yield if block_given?
-          $stderr.puts( l )
+          $stderr.puts(l)
         end
       end
 
-      def dump( fr )
+      def dump(fr)
         if @verbose
-          log( "%2d %2s ops: %-12s node: %-30s" %
-               [ @index, fr, @ops.inspect, @node.inspect ] )
+          log("%2d %2s ops: %-12s node: %-30s" %
+               [ @index, fr, @ops.inspect, @node.inspect ])
         end
       end
 
-      def push_term( t )
+      def push_term(t)
         if @has_op
           @index += 1
         else
-          push_op( @default_op )
+          push_op(@default_op)
         end
         @node << t
         @last_term = @index
@@ -415,29 +415,29 @@ module HumanQL
         dump 'PT'
       end
 
-      def precedence_lte?( op1, op2 )
+      def precedence_lte?(op1, op2)
         @precedence[op1] <= @precedence[op2]
       end
 
-      def unary?( op )
-        ( op == :not || op.is_a?( String ) )
+      def unary?(op)
+        (op == :not || op.is_a?(String))
       end
 
-      def push_op( op )
+      def push_op(op)
         @index += 1
         # Possible special case implied DEFAULT_OP in front of :not or
         # :scope.
-        if unary?( op )
-          push_op( @default_op ) unless @has_op
+        if unary?(op)
+          push_op(@default_op) unless @has_op
         elsif @node.length < 2 # no proceeding term
           log { "Ignoring leading #{op.inspect} (index #{@index})" }
           return
         end
         loop do
           n, last = @ops.last
-          if last && precedence_lte?( op, last )
+          if last && precedence_lte?(op, last)
             @ops.pop
-            op_to_node( n, last )
+            op_to_node(n, last)
             dump 'PL'
           else
             break
@@ -452,7 +452,7 @@ module HumanQL
         loop do
           n, last = @ops.pop
           break unless last
-          op_to_node( n, last )
+          op_to_node(n, last)
           dump 'FO'
         end
         @node
@@ -462,14 +462,14 @@ module HumanQL
         @node.pop if @node.length > 1
       end
 
-      def op_to_node( opi, op )
+      def op_to_node(opi, op)
         if opi >= @last_term
           log { "Ignoring trailing #{op.inspect} (index #{opi})" }
           return
         end
         o1 = pop_term
         if o1
-          if unary?( op )
+          if unary?(op)
             @node << [ op, o1 ]
           else
             o0 = pop_term

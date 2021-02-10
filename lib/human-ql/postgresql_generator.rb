@@ -42,26 +42,26 @@ module HumanQL
 
     # Given the root node of the AST, return a string in PostgreSQL
     # tsquery syntax.
-    def generate( node )
+    def generate(node)
       op,*args = node
-      if ! node.is_a?( Array )
+      if ! node.is_a?(Array)
         op
       elsif args.empty?
         nil
       else
         case op
         when :and
-          terms_join( args, AND )
+          terms_join(args, AND)
         when :or
-          pwrap( terms_join( args, OR ) )
+          pwrap(terms_join(args, OR))
         when :not
-          if args[0].is_a?( Array )
-            NOT + pwrap( generate( args[0] ) )
+          if args[0].is_a?(Array)
+            NOT + pwrap(generate(args[0]))
           else
             NOT + args[0]
           end
         when :phrase
-          terms_join( args, NEAR )
+          terms_join(args, NEAR)
         else
           raise "Unsupported op: #{node.inspect}"
         end
@@ -70,11 +70,11 @@ module HumanQL
 
     protected
 
-    def terms_join( args, op )
-      args.map { |a| generate( a ) }.join( op )
+    def terms_join(args, op)
+      args.map { |a| generate(a) }.join(op)
     end
 
-    def pwrap( inner )
+    def pwrap(inner)
       '(' + inner + ')'
     end
 

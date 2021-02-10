@@ -22,7 +22,7 @@ require 'human-ql/query_generator'
 class TestQueryGenerator < Minitest::Test
 
   TC = HumanQL::QueryParser.new
-  QG = HumanQL::QueryGenerator.new( parser: TC )
+  QG = HumanQL::QueryGenerator.new(parser: TC)
 
   A = 'a'
   B = 'b'
@@ -31,61 +31,61 @@ class TestQueryGenerator < Minitest::Test
   E = 'e'
   FOO = 'FOO'
 
-  def assert_gen( expected, ast )
-    out = QG.generate( ast )
+  def assert_gen(expected, ast)
+    out = QG.generate(ast)
     if expected.nil?
       assert_nil(out, ast)
     else
-      assert_equal( expected, out, ast )
+      assert_equal(expected, out, ast)
     end
   end
 
   def test_empty
-    assert_gen( nil, nil )
+    assert_gen(nil, nil)
   end
 
   def test_simple
-    assert_gen( 'a', A )
+    assert_gen('a', A)
   end
 
   def test_default
-    assert_gen( 'a b', [:and, A, B] )
+    assert_gen('a b', [:and, A, B])
   end
 
   def test_or
-    assert_gen( 'a or b', [:or, A, B] )
+    assert_gen('a or b', [:or, A, B])
   end
 
   def test_not
-    assert_gen( '-a', [:not, A] )
+    assert_gen('-a', [:not, A])
   end
 
   def test_not_or
-    assert_gen( '-(a or b)', [:not, [:or, A, B]] )
+    assert_gen('-(a or b)', [:not, [:or, A, B]])
   end
 
   def test_not_and
-    assert_gen( '-(a b)', [:not, [:and, A, B]] )
+    assert_gen('-(a b)', [:not, [:and, A, B]])
   end
 
   def test_scope
-    assert_gen( 'FOO:a',        [FOO, A] )
-    assert_gen( 'FOO:(a or b)', [FOO, [:or, A, B]] )
+    assert_gen('FOO:a',        [FOO, A])
+    assert_gen('FOO:(a or b)', [FOO, [:or, A, B]])
   end
 
   def test_complex_1
-    assert_gen( 'a or b c or d',
-                [:and, [:or, A, B], [:or, C, D]] )
+    assert_gen('a or b c or d',
+               [:and, [:or, A, B], [:or, C, D]])
   end
 
   def test_complex_2
-    assert_gen( '"a b" -(c or d)',
-                [:and, [:phrase, A, B], [:not, [:or, C, D]]] )
+    assert_gen('"a b" -(c or d)',
+               [:and, [:phrase, A, B], [:not, [:or, C, D]]])
   end
 
   def test_complex_3
-    assert_gen( '-(a b) or (c d) or e',
-                [:or, [:not, [:and, A, B]], [:and, C, D], E] )
+    assert_gen('-(a b) or (c d) or e',
+               [:or, [:not, [:and, A, B]], [:and, C, D], E])
   end
 
 end

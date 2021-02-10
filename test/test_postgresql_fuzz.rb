@@ -23,7 +23,7 @@ require 'human-ql/postgresql_generator'
 require 'human-ql/tree_normalizer'
 
 class TestPostgresqlFuzz < Minitest::Test
-  DB = Sequel.connect( "postgres://localhost/human_ql_test" )
+  DB = Sequel.connect("postgres://localhost/human_ql_test")
 
   PG_VERSION =
     begin
@@ -33,7 +33,7 @@ class TestPostgresqlFuzz < Minitest::Test
       v || []
     end
 
-  TC = HumanQL::PostgreSQLCustomParser.new( pg_version: PG_VERSION )
+  TC = HumanQL::PostgreSQLCustomParser.new(pg_version: PG_VERSION)
   DN = HumanQL::TreeNormalizer.new
 
   PG = HumanQL::PostgreSQLGenerator.new
@@ -45,16 +45,16 @@ class TestPostgresqlFuzz < Minitest::Test
            end
 
   # Assert that parsing via PG to_tsquery(generated) doesn't fail
-  def assert_pg_parse( hq )
-    ast = TC.parse( hq )
-    ast = DN.normalize( ast )
+  def assert_pg_parse(hq)
+    ast = TC.parse(hq)
+    ast = DN.normalize(ast)
     if ast
-      pg = PG.generate( ast )
+      pg = PG.generate(ast)
       begin
         rt = DB["select to_tsquery(?) as tsquery", pg].first[:tsquery]
-        refute_nil( rt, hq )
+        refute_nil(rt, hq)
       rescue Sequel::DatabaseError => e
-        fail( "On query #{hq.inspect} -> #{ast.inspect}: #{ e.to_s }" )
+        fail("On query #{hq.inspect} -> #{ast.inspect}: #{ e.to_s }")
       end
     else
       pass
@@ -65,20 +65,20 @@ class TestPostgresqlFuzz < Minitest::Test
   GENERIC_Q = 'ape | ( boy -"cat dog" )'.freeze
 
   # Additional characters which could conceivably cause trouble
-  RANDOM_C = ( '({"a !:*\n\t ,^#:/-0.123e-9)&<>' + "\0\'\\" ).freeze
+  RANDOM_C = ('({"a !:*\n\t ,^#:/-0.123e-9)&<>' + "\0\'\\").freeze
 
   PASSES.times do |i|
-    define_method( "test_fuzz_#{i}" ) do
+    define_method("test_fuzz_#{i}") do
       1000.times do
-        s = rand( GENERIC_Q.length )
-        l = rand( GENERIC_Q.length * 2 )
+        s = rand(GENERIC_Q.length)
+        l = rand(GENERIC_Q.length * 2)
         q = GENERIC_Q[s,l]
         20.times do
           if rand(3) == 1
             q[rand(q.length+1)] = fuzz
           end
         end
-        assert_pg_parse( q )
+        assert_pg_parse(q)
       end
     end
   end
@@ -87,4 +87,4 @@ class TestPostgresqlFuzz < Minitest::Test
     RANDOM_C[rand(RANDOM_C.length)]
   end
 
-end if defined?( ::Sequel )
+end if defined?(::Sequel)

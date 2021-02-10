@@ -66,7 +66,7 @@ module HumanQL
 
     # Construct given options that are applied via same name setters
     # on self.
-    def initialize( opts = {} )
+    def initialize(opts = {})
       @nested_scope = false
       @nested_not = false
       @unconstrained_not = true
@@ -76,44 +76,44 @@ module HumanQL
       @not_scope = :invert
 
       opts.each do |name,val|
-        send( name.to_s + '=', val )
+        send(name.to_s + '=', val)
       end
     end
 
     # Return a new normalized AST from the given AST root node.
-    def normalize( node )
-      node = normalize_1( node, EMPTY_STACK, @unconstrained_not )
-      if ( @not_scope != true ) || @scope_and_only || @scope_at_top_only
-        node = normalize_2( node, EMPTY_STACK )
+    def normalize(node)
+      node = normalize_1(node, EMPTY_STACK, @unconstrained_not)
+      if (@not_scope != true) || @scope_and_only || @scope_at_top_only
+        node = normalize_2(node, EMPTY_STACK)
       end
       node
     end
 
     protected
 
-    def scope_can_constrain?( scope )
+    def scope_can_constrain?(scope)
       @scope_can_constrain
     end
 
     EMPTY_STACK = [].freeze
 
     # Return true if node is a valid constraint
-    def constraint?( node )
+    def constraint?(node)
       op,*args = node
-      if ! node.is_a?( Array )
+      if ! node.is_a?(Array)
         true
       elsif args.empty?
         false
       else
         case op
         when :and
-          args.any? { |a| constraint?( a ) }
+          args.any? { |a| constraint?(a) }
         when :or
-          args.all? { |a| constraint?( a ) }
+          args.all? { |a| constraint?(a) }
         when :phrase
           true
         when String
-          scope_can_constrain?( op ) && constraint?( args.first )
+          scope_can_constrain?(op) && constraint?(args.first)
         else
           false
         end
@@ -122,9 +122,9 @@ module HumanQL
 
     private
 
-    def normalize_1( node, ops, constrained )
+    def normalize_1(node, ops, constrained)
       op,*args = node
-      if ! node.is_a?( Array )
+      if ! node.is_a?(Array)
         op
       elsif args.empty?
         nil
@@ -133,12 +133,12 @@ module HumanQL
         case op
         when :and
           unless constrained
-            constrained = args.any? { |a| constraint?( a ) }
+            constrained = args.any? { |a| constraint?(a) }
           end
         when String #scope
           args = args[0,1] if args.length > 1
           if !@nested_scope
-            outer = ops.find { |o| o.is_a?( String ) }
+            outer = ops.find { |o| o.is_a?(String) }
             if outer == op
               return args.first
             elsif outer
@@ -147,33 +147,33 @@ module HumanQL
           end
         when :not
           args = args[0,1] if args.length > 1
-          return nil if !constrained || ( !@nested_not && ops.rindex(:not) )
+          return nil if !constrained || (!@nested_not && ops.rindex(:not))
         end
 
-        a_ops = ops.dup.push( op )
+        a_ops = ops.dup.push(op)
         out = []
         args.each do |a|
-          a = normalize_1( a, a_ops, constrained )
-          if a.is_a?( Array ) && a[0] == op
+          a = normalize_1(a, a_ops, constrained)
+          if a.is_a?(Array) && a[0] == op
             out += a[1..-1]
           elsif a # filter nil
             out << a
           end
         end
 
-        if ( op == :and || op == :or ) && out.length < 2
+        if (op == :and || op == :or) && out.length < 2
           out[0]
         elsif out.empty?
           nil
         else
-          out.unshift( op )
+          out.unshift(op)
         end
       end
     end
 
-    def normalize_2( node, ops )
+    def normalize_2(node, ops)
       op,*args = node
-      if ! node.is_a?( Array )
+      if ! node.is_a?(Array)
         op
       elsif args.empty?
         nil
@@ -189,34 +189,34 @@ module HumanQL
         when :not
           if @not_scope == :invert
             na = args[0]
-            if na.is_a?( Array ) && na[0].is_a?( String )
+            if na.is_a?(Array) && na[0].is_a?(String)
               op, na[0] = na[0], op
               return [ op, na ]
             end
           end
         end
 
-        a_ops = ops.dup.push( op )
+        a_ops = ops.dup.push(op)
         out = []
         args.each do |a|
-          a = normalize_2( a, a_ops )
-          if a.is_a?( Array ) && a[0] == op
+          a = normalize_2(a, a_ops)
+          if a.is_a?(Array) && a[0] == op
             out += a[1..-1]
           elsif a # filter nil
             out << a
           end
         end
 
-        if ( op == :and || op == :or ) && out.length < 2
+        if (op == :and || op == :or) && out.length < 2
           out[0]
         elsif out.empty?
           nil
         # If scope still found below a :not, remove it. With :invert,
         # this implies nodes intervening
-        elsif @not_scope != true && op.is_a?( String ) && ops.rindex(:not)
+        elsif @not_scope != true && op.is_a?(String) && ops.rindex(:not)
           nil
         else
-          out.unshift( op )
+          out.unshift(op)
         end
       end
     end

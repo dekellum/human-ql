@@ -32,7 +32,7 @@ module HumanQL
 
     UNDERSCORE = '_'.freeze
 
-    # Construct given options to set via base clase or as specified
+    # Construct given options to set via base class or as specified
     # below.
     #
     # === Options
@@ -54,7 +54,7 @@ module HumanQL
 
       # Phrase support starts in 9.6
       if (pg_version <=> [9,6]) >= 0
-        # Handle what PG-sensitive chracters we can early as
+        # Handle what PG-sensitive characters we can early as
         # whitespace. This can't include anything part of HumanQL,
         # e.g. ':' as used for scopes, so deal with the remainder
         # below.
@@ -67,7 +67,7 @@ module HumanQL
         self.spaces = /[[:space:]*!<>\0\\"]+/.freeze
       end
 
-      # Use by custom #norm_phrase_tokens as a superset of the
+      # Used by custom #norm_phrase_tokens as a super-set of the
       # #lparen, #rparen token patterns removed by default.  In
       # PostgreSQL, the '|' and '&' still need to be filtered. Other
       # freestanding punctuation tokens are best removed entirely.

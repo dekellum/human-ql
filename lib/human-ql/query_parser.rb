@@ -22,8 +22,8 @@ module HumanQL
   #
   # === Supported Syntax Summary
   #
-  # As per defaults. In the table below, input string variations on
-  # the left are sperated by ',' and output AST is shown on the right.
+  # As per defaults. In the table below, input string variations are shown at
+  # left separated by ','; and output AST is shown on the right.
   #
   #    a                        --> 'a'
   #    "a b c"                  --> [ :phrase, 'a', 'b', 'c' ]
@@ -41,7 +41,7 @@ module HumanQL
   #   supported.
   #
   # The AST output from #parse may have various no-ops and
-  # redundances. Run it through a TreeNormalizer to avoid seeing or
+  # redundancies. Run it through a TreeNormalizer to avoid seeing or
   # needing to handle these cases.
   #
   # === Customization
@@ -87,7 +87,7 @@ module HumanQL
     # Default: :and
     attr_accessor :default_op
 
-    # Hash of operators to precedence Integer value.  The hash should
+    # Hash of operators to precedence Integer values.  The hash should
     # also provide a default value for unlisted operators like any
     # supported scopes. To limit human surprise, the #default_op
     # should have the lowest precedence.  The default is as per
@@ -95,33 +95,33 @@ module HumanQL
     # highest precedence at 11.
     attr_accessor :precedence
 
-    # Pattern matching one or more characters to treat as white-space
+    # Pattern matching one or more characters to treat as white-space.
     # Default: SPACES
     attr_accessor :spaces
 
-    # Pattern used for lexing to treat certain punctuation characters
-    # as seperate tokens, even if they are not space seperated.
-    # Default: Pattern matching any characters '(', ')', '|', '&', '"'
-    # as used as operator/parenthesis tokens in defaults below.
+    # Pattern used for lexing to treat certain punctuation characters as
+    # separate tokens, even if they are not space separated.
+    # Default: Pattern matching any characters '(', ')', '|', '&', '"' as used
+    # as operator/parenthesis tokens in the defaults below.
     attr_accessor :infix_token
 
-    # Pattern used for lexing to treat certain characters as seperate
+    # Pattern used for lexing to treat certain characters as separate
     # tokens when appearing as a prefix only.
     # Default '-' (as used in default #not_tokens)
     attr_accessor :prefix_token
 
     # OR operator token pattern. Should match the entire token using
-    # the '\A' and '/z' syntax for begining and end of string.
+    # the '\A' and '/z' syntax for beginning and end of string.
     # Default: Pattern matching complete tokens 'OR', 'or', or '|'
     attr_accessor :or_token
 
     # AND operator token pattern. Should match the entire token using
-    # the '\A' and '/z' syntax for begining and end of string.
+    # the '\A' and '/z' syntax for beginning and end of string.
     # Default: Pattern matching complete tokens 'AND', 'and', or '&'
     attr_accessor :and_token
 
     # NOT operator token pattern. Should match the entire token using
-    # the '\A' and '/z' syntax for begining and end of string.
+    # the '\A' and '/z' syntax for beginning and end of string.
     # Default: Pattern matching complete tokens 'NOT', 'not', or '-'
     attr_accessor :not_token
 
@@ -129,8 +129,7 @@ module HumanQL
     # Default: '"'
     attr_accessor :lquote
 
-    # Right quote pattern or value. Its fine if this is the same as
-    # #lquote.
+    # Right quote pattern or value. Its fine if this is the same as #lquote.
     # Default: '"'
     attr_accessor :rquote
 
@@ -143,7 +142,7 @@ module HumanQL
     attr_accessor :rparen
 
     # Given one or an Array of scope prefixes, generate the #scope and
-    # #scope_token patterns. A trailing hash is intepreted
+    # #scope_token patterns. A trailing hash is interpreted
     # as options, see below.
     #
     # ==== Options
@@ -185,7 +184,7 @@ module HumanQL
     # Default: nil -> no scopes
     attr_accessor :scope_token
 
-    # Should scope tokens be upcased in the AST? This would imply
+    # Should scope tokens be capitalized in the AST? This would imply
     # case-insensitive #scope, and #scope_token as generated via
     # #scopes= with the `ignorecase: true` option.
     # Default: false
@@ -310,13 +309,13 @@ module HumanQL
     end
 
     # Treat various punctuation form operators as _always_ being
-    # seperate tokens per #infix_token pattern.
-    # Note: Must always call norm_space _after_ this
+    # separate tokens per #infix_token pattern.
+    # Note: Must always call norm_space _after_ this.
     def norm_infix(q)
       q.gsub(@infix_token, ' \0 ')
     end
 
-    # Split prefixes as seperate tokens per #prefix_token pattern
+    # Split prefixes as separate tokens per #prefix_token pattern.
     def norm_prefix(q)
       if @prefix_token
         q.gsub(@prefix_token, '\0 ')
@@ -343,8 +342,8 @@ module HumanQL
       end
     end
 
-    # Normalize any whitespace to a single ASCII space character and
-    # strip leading/trailing whitepsace.
+    # Normalize any whitespace to a single ASCII SPACE character and
+    # strip leading/trailing whitespace.
     def norm_space(q)
       q.gsub(@spaces, ' ').strip
     end

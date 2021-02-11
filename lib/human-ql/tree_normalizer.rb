@@ -29,11 +29,11 @@ module HumanQL
     attr_accessor :nested_not
 
     # Allow unconstrained :not?
-    # Queries containing an unsconstrained :not may be costly to
+    # Queries containing an unconstrained :not may be costly to
     # execute. If false the unconstrained :not will be removed.
     #
     # A :not node is considered "constrained" if it has an :and
-    # ancestor with at least one contraint argument. A constraint
+    # ancestor with at least one constraint argument. A constraint
     # argument is a term, phrase, or :and node matching this same
     # criteria, or an :or node where *all* arguments match this
     # criteria. See also #scope_can_constrain.
@@ -43,8 +43,8 @@ module HumanQL
     # Does a scope count as a constraint?
     # Default: true -> a scope is a constraint if its argument is a
     # constraint.
-    # If it depends on the scope, you can override
-    # #scope_can_constrain? with this logic.
+    # If it depends on the scope, you can override #scope_can_constrain?
+    # with this logic.
     attr_accessor :scope_can_constrain
 
     # Allow SCOPE within :not?

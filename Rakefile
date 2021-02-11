@@ -30,8 +30,11 @@ end
 require 'rdoc/task'
 
 RDoc::Task.new :rdoc do |rdoc|
-  rdoc.main = "README.doc"
-  rdoc.rdoc_files.include("README.rdoc", "lib/*.rb")
+  rdoc.main = "README.rdoc"
+  rdoc.rdoc_files.include("README.rdoc", "History.rdoc",
+                          "lib/*.rb", "lib/human-ql/*.rb")
+  rdoc.rdoc_dir = 'doc'
+  rdoc.options << '--title=HumanQL RDoc'
 end
 
 task :rdoc do

@@ -1,23 +1,30 @@
 === 1.1.0 (unreleased)
+* Standardize gemspec and Rakefile tasks.
+
+* Update testing (dev) dependencies (minitest, sequel, pg, sequel_pg).
+
+* Fix minitest lints with assert_nil (from upgrade).
+
+* Use Github Actions for CI, test against PostgreSQL 11.5.
+
+* Misc documentation improvements.
 
 === 1.0.2 (2017-3-28)
-
 * HumanQL::PostgreSQLCustomParser now treats backslashes and embedded
   nulls as whitespace since these characters were found to be
   significant to the PG tsquery parser.
 
 * Additional phrase and text match tests in TestPostgreSQLGenerator.
 
-* Travis CI config including PostgreSQL 9.6
+* Travis CI config including PostgreSQL 9.6.
 
 === 1.0.1 (2017-3-21)
-
 * Drop more tokens, keep more characters in PostgreSQLCustomParser,
   which originally treated more of the PG special (unsafe) characters
   as whitespace. A result of these changes is that its less likely to
   see replacement characters in generated output.
 
-* Account for Postgresql 9.6.2 change in tests
+* Account for Postgresql 9.6.2 change in tests.
 
 === 1.0.0 (2016-11-8)
 * Initial release.
